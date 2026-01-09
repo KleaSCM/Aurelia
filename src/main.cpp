@@ -1,14 +1,38 @@
 /**
  * Aurelia Virtual Machine Entry Point.
  *
- * Fully integrated System Emulator.
- * Supports running external binaries or a built-in Performance Benchmark Demo.
+ * Fully integrated System Emulator & Performance Harness.
  *
- * Features:
- * - Full Hardware Emulation (CPU, RAM, UART, PIC, Timer, SSD).
- * - Real-time Performance Monitoring (MHz, Instructions, Time).
- * - Bus Traffic Analysis & Component Visualization.
- * - Integrated Assembler for on-the-fly demo generation.
+ * This file serves as the orchestration layer for the Aurelia Virtual SoC.
+ * It instantiates the critical hardware components (CPU, Bus, RAM,
+ * Peripherals), establishes the interconnect wiring, and drives the main
+ * execution clock loop.
+ *
+ * DESIGN PHILOSOPHY:
+ * Unlike event-driven simulators (e.g., QEMU), Aurelia uses a cycle-accurate
+ * "Tick" loop. This simplifies the architectural model and ensures
+ * deterministic behavior for debugging pipeline hazards and bus contention, at
+ * the cost of raw throughput.
+ *
+ * SYSTEM ARCHITECTURE:
+ * ┌───────────────┐      ┌───────────────┐      ┌───────────────┐
+ * │  Aurelia CPU  │◄────►│  System Bus   │◄────►│  RAM (256MB)  │
+ * └───────┬───────┘      └───────┬───────┘      └───────┬───────┘
+ *         │                      │                      │
+ *         ▼                      ▼                      ▼
+ * ┌───────────────┐      ┌───────────────┐      ┌───────────────┐
+ * │  UART (TTY)   │      │      PIC      │      │     Timer     │
+ * └───────────────┘      └───────────────┘      └───────────────┘
+ *
+ * PERFORMANCE METRICS:
+ * The harness captures real-time telemetry including:
+ * - Effective Clock Rate (MHz)
+ * - IPC (Instructions Per Cycle) via Bus Utilization
+ * - Total Execution Time
+ *
+ * USAGE:
+ * $ ./aurelia_vm [binary_path]
+ * $ ./aurelia_vm --demo  (Runs internal micro-benchmark)
  *
  * Author: KleaSCM
  * Email: KleaSCM@gmail.com
@@ -34,9 +58,19 @@
 
 using namespace Aurelia;
 
-// -----------------------------------------------------------------------------
-// Assembler Helper
-// -----------------------------------------------------------------------------
+/**
+ * @brief Just-In-Time Assembler Utility.
+ *
+ * Converts raw assembly source strings into executable machine code binaries
+ * used for internal benchmarks and unit tests.
+ *
+ * PIPELINE:
+ * [Source] -> Lexer -> [Tokens] -> Parser -> [AST] -> Resolver -> [Final AST]
+ * -> Encoder -> [Binary]
+ *
+ * @param Source The assembly source code string (NASM/GAS syntax derivative).
+ * @return std::vector<uint8_t> The compiled binary blob (Machine Code).
+ */
 std::vector<std::uint8_t> Assemble(const std::string &Source) {
   using namespace Aurelia::Tools::Assembler;
   Lexer lexer(Source);
@@ -66,9 +100,20 @@ std::vector<std::uint8_t> Assemble(const std::string &Source) {
   return encoder.GetBinary();
 }
 
-// -----------------------------------------------------------------------------
-// Built-in Demo Program (ASCII Pattern + SSD Writes)
-// -----------------------------------------------------------------------------
+/**
+ * @brief Generates the 'Mandelbrot-ish' Performance Benchmark.
+ *
+ * Creates a synthetic workload designed to stress the CPU Pipeline and
+ * Bus Interconnect.
+ *
+ * WORKLOAD CHARACTERISTICS:
+ * - 20x60 Nested Loop (O(N^2) complexity).
+ * - Heavy Arithmetic usage (ADD, SUB, MUL).
+ * - High density of Branch instructions (Pipeline Flush stress test).
+ * - MMIO Store operations to UART (Bus Write serialization).
+ *
+ * @return std::vector<uint8_t> The benchmark binary.
+ */
 std::vector<std::uint8_t> GenerateDemoProgram() {
   std::cout << "Generating Built-in Performance Benchmark (Mandelbrot-ish "
                "Pattern)...\n";
@@ -137,9 +182,11 @@ std::vector<std::uint8_t> GenerateDemoProgram() {
   return Assemble(source);
 }
 
-// -----------------------------------------------------------------------------
-// Main Application
-// -----------------------------------------------------------------------------
+/**
+ * @brief Prints the startup banner to stdout.
+ *
+ * Visual confirmation of system initialization.
+ */
 void PrintBanner() {
   std::cout << "╔════════════════════════════════════════════╗\n"
             << "║     Aurelia Virtual System v0.1.0          ║\n"
@@ -148,10 +195,26 @@ void PrintBanner() {
             << "\n";
 }
 
+/**
+ * @brief Application Entry Point.
+ *
+ * Sequences the emulator lifecycle:
+ * 1. Hardware Initialization (Allocation of Device Objects).
+ * 2. Wiring (Interconnect topology definition).
+ * 3. Program Loading (External Binary vs Internal Demo).
+ * 4. Execution Loop (Fetch-Decode-Execute Cycle).
+ * 5. Telemetry Reporting (Performance Stats).
+ *
+ * @param argc Argument count.
+ * @param argv Argument vector (argv[1] = optional binary path).
+ * @return int 0 on success, 1 on load failure.
+ */
 int main(int argc, char *argv[]) {
   PrintBanner();
 
-  // 1. Initialize Hardware
+  // -------------------------------------------------------------------------
+  // 1. Hardware Initialization
+  // -------------------------------------------------------------------------
   std::cout << "Initializing Hardware...\n";
   Bus::Bus bus;
   Memory::RamDevice ram(System::RamSize, 0); // 256MB RAM
@@ -163,7 +226,9 @@ int main(int argc, char *argv[]) {
   Peripherals::PicDevice pic;     // 0xE0002000
   Peripherals::TimerDevice timer; // 0xE0003000
 
-  // 2. Wiring
+  // -------------------------------------------------------------------------
+  // 2. Component Wiring (Bus Topology)
+  // -------------------------------------------------------------------------
   bus.ConnectDevice(&ram);
   bus.ConnectDevice(&ssd);
   bus.ConnectDevice(&uart);
@@ -178,7 +243,9 @@ int main(int argc, char *argv[]) {
             << "  [✓] Peripherals: UART, PIC, Timer\n"
             << "\n";
 
-  // 3. Load Program
+  // -------------------------------------------------------------------------
+  // 3. Program Loader
+  // -------------------------------------------------------------------------
   std::vector<std::uint8_t> program;
   if (argc > 1) {
     if (std::string(argv[1]) == "--demo") {
@@ -205,7 +272,9 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  // 4. Execution
+  // -------------------------------------------------------------------------
+  // 4. Main Execution Loop
+  // -------------------------------------------------------------------------
   std::cout << "\nStarting Execution...\n";
   std::cout << "──────────────────────────────────────────────────\n";
 
@@ -226,7 +295,9 @@ int main(int argc, char *argv[]) {
 
   std::cout << "──────────────────────────────────────────────────\n";
 
-  // 5. System Report
+  // -------------------------------------------------------------------------
+  // 5. System Telemetry Report
+  // -------------------------------------------------------------------------
   double secs = elapsed.count();
   double mhz = (static_cast<double>(cycles) / secs) / 1000000.0;
 
@@ -246,11 +317,9 @@ int main(int argc, char *argv[]) {
 
   std::cout << "\n  Component Status:\n";
 
-  // Check SSD
+  // NOTE (KleaSCM): Direct memory access via Device::OnRead() to bypass
+  // Bus tracking. This prevents observation from altering performance stats.
   Core::Data ssdVal = 0;
-  // We use the raw RamDevice::OnRead to inspect (bypassing Bus to avoid
-  // changing stats?) OnRead is const-safe usually, but here returns bool.
-  // Actually, OnRead might have side effects? RamDevice::OnRead is pure read.
   if (ssd.OnRead(0xE0000000, ssdVal) && ssdVal == 170) {
     std::cout
         << "    SSD Persistence: [Verify OK] (Value 0xAA written to Disk)\n";
