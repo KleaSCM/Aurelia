@@ -26,7 +26,7 @@ else()
         -Wcast-align
         -Wunused
         -Woverloaded-virtual
-        -fno-exceptions  # Per user style guide: No exceptions
+        -fno-exceptions 
         -fno-rtti        # Optimization (optional, removable if dynamic_cast needed)
     )
 endif()
