@@ -43,6 +43,7 @@ include(FetchContent)
 # -----------------------------------------------------------------------------
 file(GLOB_RECURSE SOURCES "src/*.cpp")
 list(FILTER SOURCES EXCLUDE REGEX "src/main.cpp$")
+list(FILTER SOURCES EXCLUDE REGEX "src/Tools/Assembler/asm.cpp$")
 file(GLOB_RECURSE HEADERS "src/*.hpp")
 
 # We create a library so tests can link against it
@@ -56,6 +57,14 @@ target_compile_options(AureliaLib PRIVATE ${AURELIA_WARNINGS})
 add_executable(Aurelia src/main.cpp)
 target_link_libraries(Aurelia PRIVATE AureliaLib)
 target_compile_options(Aurelia PRIVATE ${AURELIA_WARNINGS})
+
+# -----------------------------------------------------------------------------
+# Assembler Tool
+# -----------------------------------------------------------------------------
+add_executable(asm src/Tools/Assembler/asm.cpp)
+target_link_libraries(asm PRIVATE AureliaLib)
+target_compile_options(asm PRIVATE ${AURELIA_WARNINGS})
+
 
 # -----------------------------------------------------------------------------
 # Testing
