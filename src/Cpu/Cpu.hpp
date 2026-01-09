@@ -11,11 +11,12 @@
 
 #pragma once
 
+#include <array>
+
 #include "Bus/Bus.hpp"
 #include "Core/ITickable.hpp"
 #include "Cpu/CpuDefs.hpp"
 #include "Cpu/InstructionDefs.hpp"
-#include <array>
 
 namespace Aurelia::Cpu {
 
@@ -26,42 +27,42 @@ class Cpu : public Core::ITickable {
 public:
   Cpu();
 
-  void ConnectBus(Bus::Bus *bus);
-  void Reset(Core::Address startAddress);
+  void ConnectBus(Bus::Bus *Bus);
+  void Reset(Core::Address StartAddress);
 
   void OnTick() override;
 
   // Debug / Inspection API
-  [[nodiscard]] Core::Word GetRegister(Register reg) const;
-  void SetRegister(Register reg, Core::Word value);
+  [[nodiscard]] Core::Word GetRegister(Register Reg) const;
+  void SetRegister(Register Reg, Core::Word Value);
 
   [[nodiscard]] Core::Address GetPC() const;
-  void SetPC(Core::Address value);
+  void SetPC(Core::Address Value);
 
   [[nodiscard]] const Flags &GetFlags() const;
-  [[nodiscard]] CpuState GetState() const { return m_State; }
-  [[nodiscard]] bool IsHalted() const { return m_Halted; }
+  [[nodiscard]] CpuState GetState() const { return State; }
+  [[nodiscard]] bool IsHalted() const { return Halted; }
 
 private:
-  Bus::Bus *m_Bus = nullptr;
+  Bus::Bus *SystemBus = nullptr;
 
   // Architectural State
-  std::array<Core::Word, static_cast<std::size_t>(Register::Count)> m_GPR;
-  Core::Address m_PC = 0;
-  Flags m_Flags;
+  std::array<Core::Word, static_cast<std::size_t>(Register::Count)> GPR;
+  Core::Address PC = 0;
+  Flags CurrentFlags;
 
   // Pipeline State
-  CpuState m_State = CpuState::Fetch;
+  CpuState State = CpuState::Fetch;
 
   // Pipeline Latches
-  Instruction m_CurrentInstr; // Fetch -> Decode
-  Core::Word m_OpA = 0;       // Decode -> Execute
-  Core::Word m_OpB = 0;       // Decode -> Execute
-  Core::Word m_AluResult = 0; // Execute -> Memory/WB
-  Core::Data m_MemData = 0;   // Memory -> WB
+  Instruction CurrentInstr; // Fetch -> Decode
+  Core::Word OpA = 0;       // Decode -> Execute
+  Core::Word OpB = 0;       // Decode -> Execute
+  Core::Word AluResult = 0; // Execute -> Memory/WB
+  Core::Data MemData = 0;   // Memory -> WB
 
-  bool m_Halted = false; // HALT instruction executed
-  int m_MicroOp = 0;     // For multi-cycle stages (Fetch/Memory)
+  bool Halted = false; // HALT instruction executed
+  int MicroOp = 0;     // For multi-cycle stages (Fetch/Memory)
 };
 
 } // namespace Aurelia::Cpu

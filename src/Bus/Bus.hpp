@@ -9,37 +9,42 @@
 
 #pragma once
 
+#include <vector>
+
 #include "Bus/BusDefs.hpp"
 #include "Bus/IBusDevice.hpp"
 #include "Core/ITickable.hpp"
-#include <vector>
 
 namespace Aurelia::Bus {
 
 class Bus : public Core::ITickable {
 public:
-  void ConnectDevice(IBusDevice *device);
+  void ConnectDevice(IBusDevice *Device);
 
   // Master Interface
-  void SetAddress(Core::Address addr);
-  void SetData(Core::Data data);
-  void SetControl(ControlSignal signal, bool active);
+  void SetAddress(Core::Address Address);
+  void SetData(Core::Data Data);
+  void SetControl(ControlSignal Signal, bool Active);
+
   [[nodiscard]] const BusState &GetState() const;
   [[nodiscard]] bool IsBusy() const;
 
   // Debug / DMA Access (Bypasses timing)
-  bool Read(Core::Address addr, Core::Data &outData);
-  bool Write(Core::Address addr, Core::Data inData);
+
+  // NOTE (KleaSCM) These methods bypass the cycle-accurate simulation
+  // and are intended for debugging or instant transfers (DMA).
+  bool Read(Core::Address Address, Core::Data &OutData);
+  bool Write(Core::Address Address, Core::Data InData);
 
   // System Interface
   void OnTick() override;
 
 private:
-  std::vector<IBusDevice *> m_Devices;
-  BusState m_State;
+  std::vector<IBusDevice *> Devices;
+  BusState State;
 
   // Internal latch to hold data during transfer
-  Core::Data m_LatchedData = 0;
+  Core::Data LatchedData = 0;
 };
 
 } // namespace Aurelia::Bus

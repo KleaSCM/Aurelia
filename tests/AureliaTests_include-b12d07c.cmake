@@ -1,0 +1,5 @@
+if(EXISTS "/home/klea/Documents/Dev/Aurelia/tests/AureliaTests_tests-b12d07c.cmake")
+  include("/home/klea/Documents/Dev/Aurelia/tests/AureliaTests_tests-b12d07c.cmake")
+else()
+  add_test(AureliaTests_NOT_BUILT-b12d07c AureliaTests_NOT_BUILT-b12d07c)
+endif()

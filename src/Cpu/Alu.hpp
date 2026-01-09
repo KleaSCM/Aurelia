@@ -17,8 +17,8 @@ namespace Aurelia::Cpu {
 class Alu {
 public:
   // NOTE (KleaSCM) Pure function execution. Stateless.
-  [[nodiscard]] static AluResult Execute(AluOp op, Core::Word a, Core::Word b,
-                                         const Flags &currentFlags);
+  [[nodiscard]] static AluResult Execute(AluOp Op, Core::Word A, Core::Word B,
+                                         const Flags &CurrentFlags);
 };
 
 } // namespace Aurelia::Cpu

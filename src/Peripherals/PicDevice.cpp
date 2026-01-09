@@ -5,8 +5,10 @@
  * Email: KleaSCM@gmail.com
  */
 
-#include "Peripherals/PicDevice.hpp"
+#include <bit>
+
 #include "Core/BitManip.hpp"
+#include "Peripherals/PicDevice.hpp"
 
 namespace Aurelia::Peripherals {
 

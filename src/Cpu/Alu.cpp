@@ -10,119 +10,147 @@
 
 namespace Aurelia::Cpu {
 
-AluResult Alu::Execute(AluOp op, Core::Word a, Core::Word b,
-                       const Flags &currentFlags) {
-  AluResult res = {0, {false, false, false, false}};
+AluResult Alu::Execute(AluOp Op, Core::Word A, Core::Word B,
+                       const Flags &CurrentFlags) {
+  AluResult Res = {0, {false, false, false, false}};
 
   // Helper for Flag Calc
-  auto setZ = [&](Core::Word val) { res.NewFlags.Z = (val == 0); };
-  auto setN = [&](Core::Word val) { res.NewFlags.N = Core::CheckBit(val, 63); };
+  auto SetZ = [&](Core::Word Val) { Res.NewFlags.Z = (Val == 0); };
+  auto SetN = [&](Core::Word Val) { Res.NewFlags.N = Core::CheckBit(Val, 63); };
 
-  switch (op) {
+  switch (Op) {
   case AluOp::ADD: {
-    res.Result = a + b;
-    setZ(res.Result);
-    setN(res.Result);
-    // C: Unsigned Overflow
-    res.NewFlags.C = (res.Result < a);
-    // V: Signed Overflow (Pos+Pos=Neg or Neg+Neg=Pos)
-    bool aNeg = Core::CheckBit(a, 63);
-    bool bNeg = Core::CheckBit(b, 63);
-    bool rNeg = Core::CheckBit(res.Result, 63);
-    res.NewFlags.V = (aNeg == bNeg) && (aNeg != rNeg);
+    Res.Result = A + B;
+    SetZ(Res.Result);
+    SetN(Res.Result);
+
+    /**
+     * CARRY FLAG (C)
+     * Unsigned Overflow: Result wrap-around.
+     * If (A + B) < A, then an overflow occurred.
+     */
+    Res.NewFlags.C = (Res.Result < A);
+
+    /**
+     * OVERFLOW FLAG (V)
+     * Signed Overflow.
+     * Occurs when adding two numbers of same sign produces a result of
+     * different sign. Logic: V = (A_sign == B_sign) && (A_sign != Result_sign)
+     */
+    bool aNeg = Core::CheckBit(A, 63);
+    bool bNeg = Core::CheckBit(B, 63);
+    bool rNeg = Core::CheckBit(Res.Result, 63);
+    Res.NewFlags.V = (aNeg == bNeg) && (aNeg != rNeg);
     break;
   }
   case AluOp::SUB: {
-    res.Result = a - b;
-    setZ(res.Result);
-    setN(res.Result);
-    // C: Borrow (x86 style: C=1 if A < B).
-    res.NewFlags.C = (a < b);
-    // V: Signed Overflow (Pos-Neg=Neg or Neg-Pos=Pos)
-    // A - B = R => A = R + B
-    bool aNeg = Core::CheckBit(a, 63);
-    bool bNeg = Core::CheckBit(b, 63);
-    bool rNeg = Core::CheckBit(res.Result, 63);
-    // Overflow (V) = (Operand signs differ) AND (Result sign differs from OpA)
-    // For SUB logic: A - B is A + (-B).
-    res.NewFlags.V = (aNeg != bNeg) && (aNeg != rNeg);
+    Res.Result = A - B;
+    SetZ(Res.Result);
+    SetN(Res.Result);
+
+    /**
+     * BORROW FLAG (C)
+     * x86 Style Borrow: C=1 if A < B (unsigned check).
+     */
+    Res.NewFlags.C = (A < B);
+
+    /**
+     * OVERFLOW FLAG (V)
+     * Signed Overflow for Subtraction.
+     * Logic: A - B is equivalent to A + (-B).
+     * V = (A_sign != B_sign) && (A_sign != Result_sign)
+     * (Subtracting a negative from a positive -> positive + positive)
+     */
+    bool aNeg = Core::CheckBit(A, 63);
+    bool bNeg = Core::CheckBit(B, 63);
+    bool rNeg = Core::CheckBit(Res.Result, 63);
+    Res.NewFlags.V = (aNeg != bNeg) && (aNeg != rNeg);
     break;
   }
   case AluOp::AND:
-    res.Result = a & b;
-    setZ(res.Result);
-    setN(res.Result);
-    res.NewFlags.C = currentFlags.C; // Preserve C
-    res.NewFlags.V = false;          // Cleared
+    Res.Result = A & B;
+    SetZ(Res.Result);
+    SetN(Res.Result);
+    Res.NewFlags.C = CurrentFlags.C; // Preserve C
+    Res.NewFlags.V = false;          // Cleared
     break;
 
   case AluOp::OR:
-    res.Result = a | b;
-    setZ(res.Result);
-    setN(res.Result);
-    res.NewFlags.C = currentFlags.C;
-    res.NewFlags.V = false;
+    Res.Result = A | B;
+    SetZ(Res.Result);
+    SetN(Res.Result);
+    Res.NewFlags.C = CurrentFlags.C;
+    Res.NewFlags.V = false;
     break;
 
   case AluOp::XOR:
-    res.Result = a ^ b;
-    setZ(res.Result);
-    setN(res.Result);
-    res.NewFlags.C = currentFlags.C;
-    res.NewFlags.V = false;
+    Res.Result = A ^ B;
+    SetZ(Res.Result);
+    SetN(Res.Result);
+    Res.NewFlags.C = CurrentFlags.C;
+    Res.NewFlags.V = false;
     break;
 
   case AluOp::LSL: {
-    // Logical Shift Left
-    // Shift amount is B (lowest 6 bits usually, let's limit to < 64)
-    unsigned int shift = b & 0x3F;
+    /**
+     * LOGICAL SHIFT LEFT
+     * Shifts bits to higher significance. Empty LSBs filled with 0.
+     * Shift amount limited to [0, 63] via mask 0x3F.
+     */
+    unsigned int shift = B & 0x3F;
     if (shift == 0) {
-      res.Result = a;
-      res.NewFlags.C = currentFlags.C;
+      Res.Result = A;
+      Res.NewFlags.C = CurrentFlags.C;
     } else {
-      res.Result = a << shift;
+      Res.Result = A << shift;
       // C is the last bit shifted out (bit 64 - shift)
-      res.NewFlags.C = Core::CheckBit(a, 64 - shift);
+      Res.NewFlags.C = Core::CheckBit(A, 64 - shift);
     }
-    setZ(res.Result);
-    setN(res.Result);
-    res.NewFlags.V = false; // Shifts don't set Overflow generally in ARM
+    SetZ(Res.Result);
+    SetN(Res.Result);
+    Res.NewFlags.V = false;
     break;
   }
 
   case AluOp::LSR: {
-    // Logical Shift Right
-    unsigned int shift = b & 0x3F;
+    /**
+     * LOGICAL SHIFT RIGHT
+     * Shifts bits to lower significance. Empty MSBs filled with 0.
+     */
+    unsigned int shift = B & 0x3F;
     if (shift == 0) {
-      res.Result = a;
-      res.NewFlags.C = currentFlags.C;
+      Res.Result = A;
+      Res.NewFlags.C = CurrentFlags.C;
     } else {
-      res.Result = a >> shift;
+      Res.Result = A >> shift;
       // C is the last bit shifted out (bit shift - 1)
-      res.NewFlags.C = Core::CheckBit(a, shift - 1);
+      Res.NewFlags.C = Core::CheckBit(A, shift - 1);
     }
-    setZ(res.Result);
-    setN(res.Result);
-    res.NewFlags.V = false;
+    SetZ(Res.Result);
+    SetN(Res.Result);
+    Res.NewFlags.V = false;
     break;
   }
 
   case AluOp::ASR: {
-    // Arithmetic Shift Right (Preserve Sign)
-    unsigned int shift = b & 0x3F;
-    // C++ signed right shift is implementation defined, mostly arithmetic.
-    // We enforce it by casting to signed.
-    std::int64_t signedA = static_cast<std::int64_t>(a);
+    /**
+     * ARITHMETIC SHIFT RIGHT
+     * Shifts bits to lower significance, preserving the Sign Bit (MSB).
+     * Implemented by casting to signed int64_t before shifting.
+     */
+    unsigned int shift = B & 0x3F;
+    std::int64_t signedA = static_cast<std::int64_t>(A);
+
     if (shift == 0) {
-      res.Result = a;
-      res.NewFlags.C = currentFlags.C;
+      Res.Result = A;
+      Res.NewFlags.C = CurrentFlags.C;
     } else {
-      res.Result = static_cast<Core::Word>(signedA >> shift);
-      res.NewFlags.C = Core::CheckBit(a, shift - 1);
+      Res.Result = static_cast<Core::Word>(signedA >> shift);
+      Res.NewFlags.C = Core::CheckBit(A, shift - 1);
     }
-    setZ(res.Result);
-    setN(res.Result);
-    res.NewFlags.V = false;
+    SetZ(Res.Result);
+    SetN(Res.Result);
+    Res.NewFlags.V = false;
     break;
   }
 
@@ -130,7 +158,7 @@ AluResult Alu::Execute(AluOp op, Core::Word a, Core::Word b,
     break;
   }
 
-  return res;
+  return Res;
 }
 
 } // namespace Aurelia::Cpu

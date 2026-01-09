@@ -42,3 +42,6 @@ _deps/googletest-build/googletest/generated/gtest_main.pc
 _deps/googletest-build/googletest/generated/gtest.pc
 _deps/googletest-src/.clang-format
 a.out
+asm
+Aurelia
+tests/AureliaTests

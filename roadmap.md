@@ -147,16 +147,16 @@
 
 *Wiring components together into a functional machine.*
 
-- [ ] **7.1 Memory Map Definition**
-  - [ ] Define Address Ranges:
+- [x] **7.1 Memory Map Definition**
+  - [x] Define Address Ranges:
     - `0x00000000` - Boot ROM / RAM
     - `0xE0000000` - MMIO (UART, SSD, PIC)
-- [ ] **7.2 Bus Interconnect**
-  - [ ] Update `main.cpp` to instantiate `System`, `Bus`, `Cpu`, `Ram`, `Ssd`.
-  - [ ] Map Devices to Bus addresses.
-- [ ] **7.3 Reset Logic**
-  - [ ] Implement Power-On Reset vector (PC = 0).
-  - [ ] Load binary image into RAM at startup.
+- [x] **7.2 Bus Interconnect**
+  - [x] Update `main.cpp` to instantiate `System`, `Bus`, `Cpu`, `Ram`, `Ssd`.
+  - [x] Map Devices to Bus addresses.
+- [x] **7.3 Reset Logic**
+  - [x] Implement Power-On Reset vector (PC = 0).
+  - [x] Load binary image into RAM at startup.
 
 ## 8. I/O & Peripherals
 
@@ -177,37 +177,14 @@
 
 *Proof of Life.*
 
-- [ ] **9.1 The Bootloader**
-  - [ ] Initialize Stack Pointer (`SP`).
-  - [ ] Initialize Peripherals.
-  - [ ] Print "System Ready" to UART.
+- [x] **9.1 The Bootloader**
+  - [x] Initialize Stack Pointer (`SP`).
+  - [x] Initialize Peripherals.
+  - [x] Print "System Ready" to UART (Simulated via Main).
 - [ ] **9.2 Integration Tests**
   - [ ] "Hello World": Assert UART output.
   - [ ] "SSD Read/Write": Verify persistence via Assembly.
   - [ ] "Math Test": Verify ALU via Assembly.
-  - [x] Create `class Alu`.
-  - [x] Implement `Add(a, b)` with Carry/Overflow detection.
-  - [x] Implement `Sub(a, b)` with Borrow detection.
-  - [x] Implement `BitwiseAnd`, `BitwiseOr`, `BitwiseXor`.
-  - [x] Implement `ShiftLeft`, `ShiftRight` (Logical & Arithmetic).
-- [x] **5.3 Instruction Set Decoder**
-  - [x] Define `enum class Opcode`.
-  - [x] Create `struct Instruction` (Opcode, Registers, Immediate).
-  - [x] Implement `Decoder::Decode(uint32_t raw)` -> `Instruction`.
-- [x] **5.4 Control Unit Pipeline**
-  - [x] Create `class Cpu` (Control Unit).
-  - [x] Implement `Fetch`: Request PC from Bus, wait for Wait=0.
-  - [x] Implement `Decode`: Parse Opcode/Operands.
-  - [x] Implement `Execute`: Dispatch to ALU or Branch logic.
-  - [x] Implement `Memory`: Load/Store Data Phase.
-  - [x] Implement `WriteBack`: Commit to Register File.
-
-## 6. Verification & System Integration
-
-- [ ] **6.1 Assembler Tool**
-  - [ ] Parse text files (e.g., `ADD R1, R2, R3`).
-  - [ ] Generate binary machine code.
-- [ ] **6.2 System Tests**
   - [x] `NvmeControllerTest`: Full Host-Controller-NAND Loop.
   - [x] `CpuPipelineTest`: Pipeline FSM Execution.
   - [x] `FtlPersistenceTest`: Power-loss recovery verification.
