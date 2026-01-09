@@ -111,23 +111,37 @@
 
 *Building the language to speak to the machine.*
 
-- [ ] **6.1 Lexer (Tokenization)**
+- [x] **6.1 Lexer (Tokenization)**
   - [x] Define Token Types (Mnemonic, Register, Immediate, Label, Comma).
   - [x] Implement `Lexer::Tokenize(source)`.
   - [x] Handle comments and whitespace.
-- [ ] **6.2 Parser (Syntax Analysis)**
-  - [x] Parse Instructions (`ADD R0, R1`).
+  - [x] Support brackets for memory operands.
+  - [x] Support binary literals, negative immediates, strings.
+  - [x] Handle high registers (R16-R31).
+- [x] **6.2 Parser (Syntax Analysis)**
+  - [x] Parse Instructions (`ADD R0, R1, R2`).
   - [x] Parse Labels (`loop:`).
-  - [x] Parse Directives (`.data`, `.text`).
-- [ ] **6.3 Symbol Table**
-  - [ ] First Pass: Record Label addresses.
-  - [ ] Second Pass: Resolve Label references.
-- [ ] **6.4 Code Generation (Encoder)**
-  - [ ] Implement Instruction Encoding (Data Processing, Memory, Branch).
-  - [ ] Handle Immediate encodings.
-- [ ] **6.5 CLI Tool**
-  - [ ] Read `.asm` files.
-  - [ ] Output flat binary `.bin`.
+  - [x] Parse Directives (`.string`).
+  - [x] Build AST (ParsedInstruction structure).
+  - [x] Support memory operands `[Rn, #offset]`.
+  - [x] Error reporting with line/column information.
+- [x] **6.3 Symbol Resolution**
+  - [x] First Pass: Record Label addresses.
+  - [x] Second Pass: Resolve Label references to PC-relative offsets.
+  - [x] Range validation for branch targets (±1024 bytes).
+  - [x] Undefined label detection.
+- [x] **6.4 Code Generation (Encoder)**
+  - [x] Implement Instruction Encoding (32-bit fixed width).
+  - [x] Per-opcode validation (operand count/type checking).
+  - [x] Handle all instruction formats (R-Type, I-Type, M-Type, B-Type).
+  - [x] Range checking for immediate values (11-bit signed/unsigned).
+  - [x] Little-endian binary output.
+- [x] **6.5 CLI Tool (`asm` executable)**
+  - [x] Read `.s` assembly files.
+  - [x] Complete pipeline: Lexer → Parser → Resolver → Encoder.
+  - [x] Output flat binary `.bin` (text + data segments).
+  - [x] Stage-specific error reporting.
+  - [x] UNIX-style exit codes.
 
 ## 7. System Integration (The Motherboard)
 
