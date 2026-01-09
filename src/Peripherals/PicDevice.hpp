@@ -101,6 +101,15 @@ public:
   PicDevice();
 
   /**
+   * IRQ LINE DEFINITIONS
+   */
+  static constexpr std::uint8_t MaxIrqLines = 16;
+  static constexpr std::uint8_t IrqUartRx = 0;   // UART receive data
+  static constexpr std::uint8_t IrqTimer = 1;    // Timer expire
+  static constexpr std::uint8_t IrqKeyboard = 2; // Keyboard data ready
+  static constexpr std::uint8_t IrqMouse = 3;    // Mouse movement/click
+
+  /**
    * @brief Check if address falls within PIC register range.
    *
    * PIC occupies 4KB page starting at PicBase (0xE0002000).
@@ -202,13 +211,6 @@ private:
   static constexpr Core::Address IrqEnableOffset = 0x4;
   static constexpr Core::Address IrqAckOffset = 0x8;
   static constexpr Core::Address IrqTriggerOffset = 0xC;
-
-  /**
-   * IRQ LINE DEFINITIONS
-   */
-  static constexpr std::uint8_t MaxIrqLines = 16;
-  static constexpr std::uint8_t IrqUartRx = 0; // UART receive data
-  static constexpr std::uint8_t IrqTimer = 1;  // Timer expire
 
   /**
    * @brief Pending interrupt status.

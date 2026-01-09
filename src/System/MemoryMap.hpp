@@ -101,9 +101,11 @@ constexpr Address StorageControllerEnd =
  * - PIC (Interrupt Controller): Will be at 0xE000_2000
  * - Timer: Will be at 0xE000_3000
  */
-constexpr Address UartBase = 0xE0001000;  // 4 KB reserved
-constexpr Address PicBase = 0xE0002000;   // 4 KB reserved
-constexpr Address TimerBase = 0xE0003000; // 4 KB reserved
+constexpr Address UartBase = 0xE0001000;     // 4 KB reserved
+constexpr Address PicBase = 0xE0002000;      // 4 KB reserved
+constexpr Address TimerBase = 0xE0003000;    // 4 KB reserved
+constexpr Address KeyboardBase = 0xE0004000; // 4 KB reserved
+constexpr Address MouseBase = 0xE0005000;    // 4 KB reserved
 
 /**
  * Reset Vector

@@ -41,6 +41,8 @@
 #include "Bus/Bus.hpp"
 #include "Cpu/Cpu.hpp"
 #include "Memory/RamDevice.hpp"
+#include "Peripherals/KeyboardDevice.hpp"
+#include "Peripherals/MouseDevice.hpp"
 #include "Peripherals/PicDevice.hpp"
 #include "Peripherals/TimerDevice.hpp"
 #include "Peripherals/UartDevice.hpp"
@@ -222,9 +224,11 @@ int main(int argc, char *argv[]) {
   ssd.SetBaseAddress(0xE0000000);            // SSD MMIO Base
 
   Cpu::Cpu cpu;
-  Peripherals::UartDevice uart;   // 0xE0001000
-  Peripherals::PicDevice pic;     // 0xE0002000
-  Peripherals::TimerDevice timer; // 0xE0003000
+  Peripherals::UartDevice uart;    // 0xE0001000
+  Peripherals::PicDevice pic;      // 0xE0002000
+  Peripherals::TimerDevice timer;  // 0xE0003000
+  Peripherals::KeyboardDevice kbc; // 0xE0004000
+  Peripherals::MouseDevice mouse;  // 0xE0005000
 
   // -------------------------------------------------------------------------
   // 2. Component Wiring (Bus Topology)
@@ -234,13 +238,20 @@ int main(int argc, char *argv[]) {
   bus.ConnectDevice(&uart);
   bus.ConnectDevice(&pic);
   bus.ConnectDevice(&timer);
+  bus.ConnectDevice(&kbc);
+  bus.ConnectDevice(&mouse);
+
+  // Interrupt Routing
+  kbc.ConnectPic(&pic);
+  mouse.ConnectPic(&pic);
+
   cpu.ConnectBus(&bus);
 
   std::cout << "  [✓] Bus Interconnect Active\n"
             << "  [✓] RAM: 256MB (Mapped @ 0x00000000)\n"
             << "  [✓] SSD: 4KB Buffer (Mapped @ 0xE0000000)\n"
             << "  [✓] CPU: Aurelia Core (Connected)\n"
-            << "  [✓] Peripherals: UART, PIC, Timer\n"
+            << "  [✓] Peripherals: UART, PIC, Timer, KBC, Mouse\n"
             << "\n";
 
   // -------------------------------------------------------------------------
