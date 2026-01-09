@@ -162,16 +162,16 @@
 
 *Giving the system senses.*
 
-- [ ] **8.1 UART Controller (Serial Console)**
-  - [ ] Map to `0xE0000000`.
-  - [ ] Implement `Write` (Transmit char to stdout).
-  - [ ] Implement `Read` (Receive char from stdin).
-- [ ] **8.2 Programmable Interrupt Controller (PIC)**
-  - [ ] Manage Interrupt Request (IRQ) lines.
-  - [ ] Signal CPU to pause and handle standard ISRs.
-- [ ] **8.3 System Timer**
-  - [ ] Map to `0xE0000100`.
-  - [ ] Fire IRQ at fixed intervals.
+- [x] **8.1 UART Controller (Serial Console)**
+  - [x] Map to `0xE0001000`.
+  - [x] Implement `Write` (Transmit char to stdout).
+  - [x] Implement `Read` (Receive char from stdin).
+- [x] **8.2 Programmable Interrupt Controller (PIC)**
+  - [x] Manage Interrupt Request (IRQ) lines.
+  - [x] Signal CPU to pause and handle standard ISRs.
+- [x] **8.3 System Timer**
+  - [x] Map to `0xE0003000`.
+  - [x] Fire IRQ at fixed intervals.
 
 ## 9. System Software (Verification)
 
