@@ -36,6 +36,10 @@ void Bus::SetControl(ControlSignal Signal, bool Active) {
       std::countr_zero(static_cast<Core::Byte>(Signal)));
 
   if (Active) {
+    if (Signal == ControlSignal::Read)
+      ReadCount++;
+    if (Signal == ControlSignal::Write)
+      WriteCount++;
     State.Control = Core::SetBit(State.Control, bitIndex);
   } else {
     State.Control = Core::ClearBit(State.Control, bitIndex);

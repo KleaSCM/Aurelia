@@ -1,8 +1,14 @@
 /**
  * Aurelia Virtual Machine Entry Point.
  *
- * Complete system integration: CPU + Bus + RAM + Storage + Loader.
- * Loads assembled binaries and executes them on the simulated CPU.
+ * Fully integrated System Emulator.
+ * Supports running external binaries or a built-in Performance Benchmark Demo.
+ *
+ * Features:
+ * - Full Hardware Emulation (CPU, RAM, UART, PIC, Timer, SSD).
+ * - Real-time Performance Monitoring (MHz, Instructions, Time).
+ * - Bus Traffic Analysis & Component Visualization.
+ * - Integrated Assembler for on-the-fly demo generation.
  *
  * Author: KleaSCM
  * Email: KleaSCM@gmail.com
@@ -11,17 +17,129 @@
 #include "Bus/Bus.hpp"
 #include "Cpu/Cpu.hpp"
 #include "Memory/RamDevice.hpp"
-#include "Storage/Controller/StorageController.hpp"
+#include "Peripherals/PicDevice.hpp"
+#include "Peripherals/TimerDevice.hpp"
+#include "Peripherals/UartDevice.hpp"
 #include "System/Loader.hpp"
 #include "System/MemoryMap.hpp"
+#include "Tools/Assembler/Encoder.hpp"
+#include "Tools/Assembler/Lexer.hpp"
+#include "Tools/Assembler/Parser.hpp"
+#include "Tools/Assembler/Resolver.hpp"
+
+#include <chrono>
+#include <iomanip>
 #include <iostream>
-#include <string>
+#include <vector>
 
 using namespace Aurelia;
 
-/**
- * @brief Prints system banner and configuration.
- */
+// -----------------------------------------------------------------------------
+// Assembler Helper
+// -----------------------------------------------------------------------------
+std::vector<std::uint8_t> Assemble(const std::string &Source) {
+  using namespace Aurelia::Tools::Assembler;
+  Lexer lexer(Source);
+  auto tokens = lexer.Tokenize();
+  if (tokens.empty())
+    return {};
+
+  Parser parser(tokens);
+  if (!parser.Parse()) {
+    std::cerr << "Parser Error: " << parser.GetErrorMessage() << "\n";
+    return {};
+  }
+
+  auto instructions = parser.GetInstructions();
+  auto labels = parser.GetLabels();
+  Resolver resolver(instructions, labels);
+  if (!resolver.Resolve()) {
+    std::cerr << "Resolver Error: " << resolver.GetErrorMessage() << "\n";
+    return {};
+  }
+
+  Encoder encoder(instructions);
+  if (!encoder.Encode()) {
+    std::cerr << "Encoder Error: " << encoder.GetErrorMessage() << "\n";
+    return {};
+  }
+  return encoder.GetBinary();
+}
+
+// -----------------------------------------------------------------------------
+// Built-in Demo Program (ASCII Pattern + SSD Writes)
+// -----------------------------------------------------------------------------
+std::vector<std::uint8_t> GenerateDemoProgram() {
+  std::cout << "Generating Built-in Performance Benchmark (Mandelbrot-ish "
+               "Pattern)...\n";
+  // Logic: 20x60 loop generating ASCII art based on (X+Y)
+  // PLUS: Verify SSD writing.
+  std::string source = R"(
+		; Setup UART Base Address (0xE0001000)
+		MOV R1, #224
+		MOV R2, #24
+		LSL R1, R1, R2   ; R1 = 0xE0000000
+		MOV R2, #16
+		MOV R3, #8
+		LSL R2, R2, R3   ; R2 = 0x1000
+		ADD R1, R1, R2   ; R1 = 0xE0001000
+
+		; Y Loop (20 lines)
+		MOV R4, #20
+	loop_y:
+		; X Loop (60 chars)
+		MOV R5, #60
+		
+	loop_x:
+		; Calculate Char: (X + Y) & 63 + 33
+		MOV R6, #0
+		ADD R6, R4, R5
+		MOV R7, #63
+		AND R6, R6, R7
+		MOV R7, #33
+		ADD R6, R6, R7
+		
+		; Write Char to UART
+		STR R6, [R1, #0]
+		
+		; Decrement X
+		MOV R7, #1
+		SUB R5, R5, R7
+		MOV R6, #0
+		CMP R5, R6
+		BNE loop_x
+		
+		; Newline
+		MOV R6, #10
+		STR R6, [R1, #0]
+		
+		; Decrement Y
+		MOV R7, #1
+		SUB R4, R4, R7
+		MOV R6, #0
+		CMP R4, R6
+		BNE loop_y
+		
+		; --------------------------
+		; SSD Verification Step
+		; --------------------------
+		; Write 0xAA (170) to SSD Base (0xE0000000)
+		MOV R8, #224
+		MOV R9, #24
+		LSL R8, R8, R9   ; R8 = 0xE0000000 (SSD Base)
+		
+		MOV R9, #170     ; Test Pattern
+		STR R9, [R8, #0] ; Write to SSD Persistence
+		
+		HALT
+	)";
+
+  return Assemble(source);
+}
+
+// -----------------------------------------------------------------------------
+// Main Application
+// -----------------------------------------------------------------------------
 void PrintBanner() {
   std::cout << "╔════════════════════════════════════════════╗\n"
             << "║     Aurelia Virtual System v0.1.0          ║\n"
@@ -30,175 +148,122 @@ void PrintBanner() {
             << "\n";
 }
 
-/**
- * @brief Prints memory map and system configuration.
- */
-void PrintConfiguration() {
-  std::cout << "System Configuration:\n"
-            << "  Architecture: 64-bit RISC-like\n"
-            << "  ISA: Aurelia v2.0 (32 registers)\n"
-            << "  Instruction Width: 32-bit fixed\n"
-            << "  Endianness: Little-endian\n"
-            << "\n";
-
-  std::cout << "Memory Map:\n"
-            << "  0x00000000 - 0x0FFFFFFF  RAM (256 MB)\n"
-            << "  0xE0000000 - 0xE0000FFF  Storage Controller MMIO\n"
-            << "\n";
-
-  std::cout << "Reset Vector: 0x" << std::hex << System::ResetVector << std::dec
-            << "\n"
-            << "Stack Pointer: 0x" << std::hex << System::InitialStackPointer
-            << std::dec << "\n"
-            << "\n";
-}
-
-/**
- * @brief Main system integration and execution loop.
- *
- * WORKFLOW:
- * 1. Initialize all hardware components
- * 2. Connect devices to Bus
- * 3. Load program binary (if provided)
- * 4. Reset CPU
- * 5. Execute program
- * 6. Report final state
- */
 int main(int argc, char *argv[]) {
   PrintBanner();
-  PrintConfiguration();
 
-  /**
-   * COMPONENT INSTANTIATION
-   *
-   * Create all hardware components. Order doesn't matter here,
-   * they're just allocated on the stack.
-   */
-  std::cout << "Initializing hardware...\n";
-
+  // 1. Initialize Hardware
+  std::cout << "Initializing Hardware...\n";
   Bus::Bus bus;
-  Memory::RamDevice ram(System::RamSize, 0); // Zero latency
+  Memory::RamDevice ram(System::RamSize, 0); // 256MB RAM
+  Memory::RamDevice ssd(4096, 0);            // 4KB SSD Buffer
+  ssd.SetBaseAddress(0xE0000000);            // SSD MMIO Base
+
   Cpu::Cpu cpu;
+  Peripherals::UartDevice uart;   // 0xE0001000
+  Peripherals::PicDevice pic;     // 0xE0002000
+  Peripherals::TimerDevice timer; // 0xE0003000
 
-  // Storage controller (optional, for future use)
-  // Storage::Controller::StorageController storage(...);
-
-  std::cout << "  [✓] Bus initialized\n";
-  std::cout << "  [✓] RAM initialized (" << (System::RamSize / (1024 * 1024))
-            << " MB)\n";
-  std::cout << "  [✓] CPU initialized\n";
-  std::cout << "\n";
-
-  /**
-   * BUS WIRING
-   *
-   * Connect devices to the Bus. The Bus uses IBusDevice::IsAddressInRange()
-   * to route read/write requests to the correct device.
-   */
-  std::cout << "Connecting devices to bus...\n";
-
+  // 2. Wiring
   bus.ConnectDevice(&ram);
+  bus.ConnectDevice(&ssd);
+  bus.ConnectDevice(&uart);
+  bus.ConnectDevice(&pic);
+  bus.ConnectDevice(&timer);
   cpu.ConnectBus(&bus);
-  // bus.ConnectDevice(&storage); // Future
 
-  std::cout << "  [✓] RAM connected to bus\n";
-  std::cout << "  [✓] CPU connected to bus\n";
-  std::cout << "\n";
+  std::cout << "  [✓] Bus Interconnect Active\n"
+            << "  [✓] RAM: 256MB (Mapped @ 0x00000000)\n"
+            << "  [✓] SSD: 4KB Buffer (Mapped @ 0xE0000000)\n"
+            << "  [✓] CPU: Aurelia Core (Connected)\n"
+            << "  [✓] Peripherals: UART, PIC, Timer\n"
+            << "\n";
 
-  /**
-   * PROGRAM LOADING
-   *
-   * If a binary file is provided as argv[1], load it into RAM at address 0x0.
-   * This simulates a bootloader loading a program from disk into memory.
-   */
+  // 3. Load Program
+  std::vector<std::uint8_t> program;
   if (argc > 1) {
-    std::string programFile = argv[1];
-    std::cout << "Loading program: " << programFile << "\n";
-
-    System::Loader loader(bus);
-    if (!loader.LoadBinary(programFile, System::ResetVector)) {
-      std::cerr << "❌ Load failed: " << loader.GetErrorMessage() << "\n";
-      return 2;
+    if (std::string(argv[1]) == "--demo") {
+      program = GenerateDemoProgram();
+    } else {
+      std::cout << "Loading binary: " << argv[1] << "...\n";
+      System::Loader loader(bus);
+      if (!loader.LoadBinary(argv[1], System::ResetVector)) {
+        std::cerr << "Fatal: Failed to load binary.\n";
+        return 1;
+      }
     }
-
-    std::cout << "  [✓] Program loaded at 0x" << std::hex << System::ResetVector
-              << std::dec << "\n";
-    std::cout << "\n";
   } else {
-    std::cout << "No program specified. Halting.\n";
-    std::cout << "\nUsage: " << argv[0] << " <program.bin>\n";
-    std::cout << "Example: " << argv[0] << " examples/test.bin\n";
-    return 0;
+    std::cout
+        << "No input file provided. Defaulting to Internal Benchmark.\n\n";
+    program = GenerateDemoProgram();
   }
 
-  /**
-   * CPU RESET
-   *
-   * Initialize CPU state:
-   * - PC = ResetVector (0x0)
-   * - SP = InitialStackPointer (end of RAM)
-   * - Clear all registers
-   * - Flush pipeline
-   */
-  std::cout << "Resetting CPU...\n";
-  cpu.Reset(System::ResetVector);
-  std::cout << "  [✓] PC = 0x" << std::hex << cpu.GetPC() << std::dec << "\n";
-  std::cout << "\n";
-
-  /**
-   * EXECUTION LOOP
-   *
-   * Run the CPU for a limited number of cycles or until HALT.
-   * Each tick advances the CPU pipeline by one stage.
-   *
-   * NOTE (KleaSCM) In a real system this would run indefinitely
-   * with interrupt handling. Here we limit to 10,000 cycles for safety.
-   */
-  std::cout << "Starting execution...\n";
-  std::cout << "═══════════════════════════════════════════\n";
-
-  const int MaxCycles = 10000;
-  int cycles = 0;
-
-  for (cycles = 0; cycles < MaxCycles; ++cycles) {
-    // Tick CPU (advances pipeline)
-    cpu.OnTick();
-
-    // Tick Bus (processes pending transactions)
-    bus.OnTick();
-
-    // Check for halt condition
-    // TODO: Add IsHalted() to CPU or check for specific PC values
-    // For now, we run for a fixed number of cycles
-
-    // Optional: Print PC every N cycles for debugging
-    if (cycles % 100 == 0) {
-      std::cout << "  Cycle " << cycles << " | PC = 0x" << std::hex
-                << cpu.GetPC() << std::dec << "\n";
+  if (!program.empty()) {
+    System::Loader loader(bus);
+    if (!loader.LoadData(program, System::ResetVector)) {
+      std::cerr << "Fatal: Failed to load program data.\n";
+      return 1;
     }
   }
 
-  std::cout << "═══════════════════════════════════════════\n";
-  std::cout << "\n";
+  // 4. Execution
+  std::cout << "\nStarting Execution...\n";
+  std::cout << "──────────────────────────────────────────────────\n";
 
-  /**
-   * FINAL STATE REPORT
-   *
-   * Display CPU registers and statistics after execution.
-   */
-  std::cout << "Execution complete.\n";
-  std::cout << "  Total Cycles: " << cycles << "\n";
-  std::cout << "  Final PC: 0x" << std::hex << cpu.GetPC() << std::dec << "\n";
-  std::cout << "\n";
+  cpu.Reset(System::ResetVector);
 
-  std::cout << "Register State:\n";
-  for (int i = 0; i < 8; ++i) {
-    std::cout << "  R" << i << " = 0x" << std::hex
-              << cpu.GetRegister(static_cast<Cpu::Register>(i)) << std::dec
-              << "\n";
+  auto start = std::chrono::high_resolution_clock::now();
+  std::uint64_t cycles = 0;
+  const std::uint64_t MaxCycles = 5000000;
+
+  while (!cpu.IsHalted() && cycles < MaxCycles) {
+    cpu.OnTick();
+    bus.OnTick();
+    cycles++;
   }
-  std::cout << "\n";
 
-  std::cout << "System halted gracefully. 💜\n";
+  auto end = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double> elapsed = end - start;
+
+  std::cout << "──────────────────────────────────────────────────\n";
+
+  // 5. System Report
+  double secs = elapsed.count();
+  double mhz = (static_cast<double>(cycles) / secs) / 1000000.0;
+
+  std::cout << "\nSYSTEM TELEMETRY REPORT:\n";
+  std::cout << "  Performance:\n"
+            << "    Clock Speed:     " << std::fixed << std::setprecision(2)
+            << mhz << " MHz\n"
+            << "    Exec Time:       " << std::fixed << std::setprecision(4)
+            << secs << "s\n"
+            << "    Total Cycles:    " << cycles << "\n";
+
+  std::cout << "\n  Bus Traffic:\n"
+            << "    Total Transfers: "
+            << (bus.GetReadCount() + bus.GetWriteCount()) << "\n"
+            << "    Memory Reads:    " << bus.GetReadCount() << "\n"
+            << "    Memory Writes:   " << bus.GetWriteCount() << "\n";
+
+  std::cout << "\n  Component Status:\n";
+
+  // Check SSD
+  Core::Data ssdVal = 0;
+  // We use the raw RamDevice::OnRead to inspect (bypassing Bus to avoid
+  // changing stats?) OnRead is const-safe usually, but here returns bool.
+  // Actually, OnRead might have side effects? RamDevice::OnRead is pure read.
+  if (ssd.OnRead(0xE0000000, ssdVal) && ssdVal == 170) {
+    std::cout
+        << "    SSD Persistence: [Verify OK] (Value 0xAA written to Disk)\n";
+  } else {
+    std::cout << "    SSD Persistence: [Idle] (No data detected)\n";
+  }
+
+  std::cout << "    CPU State:       "
+            << (cpu.IsHalted() ? "HALTED" : "RUNNING") << "\n";
+  std::cout << "    Final PC:        0x" << std::hex << cpu.GetPC() << std::dec
+            << "\n";
+
+  std::cout << "\nBye! 💜\n";
+
   return 0;
 }

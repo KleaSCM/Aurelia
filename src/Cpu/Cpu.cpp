@@ -96,6 +96,10 @@ void Cpu::OnTick() {
     } else if (CurrentInstr.Type == InstrType::Branch) {
       // Branch Offset
       OpB = CurrentInstr.Immediate;
+      // Sign Extend 11-bit Immediate
+      if (OpB & 0x400) {
+        OpB |= 0xFFFFFFFFFFFFF800;
+      }
     }
 
     State = CpuState::Execute;
@@ -137,6 +141,9 @@ void Cpu::OnTick() {
       // MOV is effectively OPA=0 + OPB
       OpA = 0;
       operation = AluOp::ADD;
+      break;
+    case Opcode::CMP:
+      operation = AluOp::SUB;
       break;
     case Opcode::Halt:
       // HALT instruction - stop execution
@@ -227,6 +234,7 @@ void Cpu::OnTick() {
     if (CurrentInstr.Op == Opcode::LDR) {
       SetRegister(CurrentInstr.Rd, MemData);
     } else if (CurrentInstr.Op != Opcode::STR &&
+               CurrentInstr.Op != Opcode::CMP &&
                CurrentInstr.Type != InstrType::Branch) {
       // ALU Result Writeback
       SetRegister(CurrentInstr.Rd, AluResult);

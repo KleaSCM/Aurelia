@@ -29,6 +29,9 @@ public:
   [[nodiscard]] const BusState &GetState() const;
   [[nodiscard]] bool IsBusy() const;
 
+  [[nodiscard]] std::size_t GetReadCount() const { return ReadCount; }
+  [[nodiscard]] std::size_t GetWriteCount() const { return WriteCount; }
+
   // Debug / DMA Access (Bypasses timing)
 
   // NOTE (KleaSCM) These methods bypass the cycle-accurate simulation
@@ -45,6 +48,9 @@ private:
 
   // Internal latch to hold data during transfer
   Core::Data LatchedData = 0;
+
+  std::size_t ReadCount = 0;
+  std::size_t WriteCount = 0;
 };
 
 } // namespace Aurelia::Bus

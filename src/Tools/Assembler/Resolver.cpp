@@ -69,12 +69,10 @@ void Resolver::ResolveOperands() {
              instr.Op == Cpu::Opcode::BNE);
 
         if (isBranch) {
-          // PC is Current + 4 (Pipeline fetch)
+          // PC is Current (Cpu adds OpB to current PC)
           // Offset = Target - PC
-          // Offset = Target - (Current + 4)
-          // Calculations in signed 64-bit to prevent overflow issues
           std::int64_t diff = static_cast<std::int64_t>(targetAddr) -
-                              (static_cast<std::int64_t>(currentAddr) + 4);
+                              static_cast<std::int64_t>(currentAddr);
 
           // Check Range (11-bit signed: -1024 to +1023)
           if (diff < -1024 || diff > 1023) {
