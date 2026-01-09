@@ -183,7 +183,7 @@
   - [x] `CpuPipelineTest`: Pipeline FSM Execution.
   - [x] `FtlPersistenceTest`: Power-loss recovery verification.
 
-## 10. Graphics
+## 10. Input
 
 - [ ] **10.1 Keyboard Controller (KBC)**
   - [ ] Implement `KeyboardDevice` (MMIO).
@@ -194,7 +194,7 @@
   - [ ] Implement `MouseDevice` (X, Y, Buttons).
   - [ ] Fire IRQ on Movement/Click.
 
-## 11. Input
+## 11. Graphics
 
 - [ ] **11.1 Video Memory (VRAM)**
   - [ ] Implement `GpuDevice` class implementation of `IBusDevice`.
