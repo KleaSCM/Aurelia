@@ -19,7 +19,8 @@ enum class ControlSignal : Core::Byte {
   Write = 1 << 1, // Master requests Write
   Wait = 1 << 2,  // Slave holds the bus (Busy)
   Ready = 1 << 3, // Slave is ready to transfer (Ack)
-  Irq = 1 << 4    // Interrupt Request
+  Irq = 1 << 4,   // Interrupt Request
+  Error = 1 << 5  // Bus Fault / Error
 };
 
 struct BusState {

@@ -8,13 +8,13 @@
  */
 
 #include "Memory/RamDevice.hpp"
-#include <gtest/gtest.h>
+#include <catch2/catch_test_macros.hpp>
 
 using namespace Aurelia;
 using namespace Aurelia::Memory;
 using namespace Aurelia::Core;
 
-TEST(MemoryTest, StorageAccess) {
+TEST_CASE("Memory - StorageAccess") {
   // Zero latency for simple storage test
   RamDevice ram(1024, 0);
   ram.SetBaseAddress(0x1000);
@@ -23,14 +23,14 @@ TEST(MemoryTest, StorageAccess) {
   Data readVal = 0;
 
   // Write
-  EXPECT_TRUE(ram.OnWrite(0x1000, writeVal));
+  CHECK(ram.OnWrite(0x1000, writeVal));
 
   // Read back
-  EXPECT_TRUE(ram.OnRead(0x1000, readVal));
-  EXPECT_EQ(readVal, writeVal);
+  CHECK(ram.OnRead(0x1000, readVal));
+  CHECK(readVal == writeVal);
 }
 
-TEST(MemoryTest, LatencySimulation) {
+TEST_CASE("Memory - LatencySimulation") {
   // 2 Ticks latency
   RamDevice ram(1024, 2);
   ram.SetBaseAddress(0x1000);
@@ -38,11 +38,11 @@ TEST(MemoryTest, LatencySimulation) {
   Data writeVal = 0xBEEF;
 
   // Tick 0: Request Write -> Should NOT complete
-  EXPECT_FALSE(ram.OnWrite(0x1000, writeVal));
+  CHECK_FALSE(ram.OnWrite(0x1000, writeVal));
 
   // Tick 1: Still waiting
   ram.OnTick();
-  EXPECT_FALSE(ram.OnWrite(0x1000, writeVal));
+  CHECK_FALSE(ram.OnWrite(0x1000, writeVal));
 
   // Tick 2: Must override wait count?
   // The device decrements logic relies on consecutive checking or bus holding
@@ -50,5 +50,5 @@ TEST(MemoryTest, LatencySimulation) {
   ram.OnTick(); // WaitTicks = 1 -> 0
 
   // Tick 2: Should be ready now!
-  EXPECT_TRUE(ram.OnWrite(0x1000, writeVal));
+  CHECK(ram.OnWrite(0x1000, writeVal));
 }

@@ -2,6 +2,7 @@
  * NAND Chip Simulation.
  *
  * Manages the array of Blocks and enforces Program/Erase constraints.
+ * Supports Data and OOB (Spare) area access.
  *
  * Author: KleaSCM
  * Email: KleaSCM@gmail.com
@@ -17,24 +18,24 @@ namespace Aurelia::Storage::Nand {
 
 class NandChip {
 public:
-  // NOTE (KleaSCM) Initialize with a fixed number of blocks.
-  // Example: 1024 Blocks * 64 Pages * 4KB = ~256MB
   explicit NandChip(std::size_t numBlocks);
 
   // NOTE (KleaSCM) Reads a full page into the provided buffer.
-  // Buffer must be at least PageDataSize bytes.
+  // Optional: Read OOB if oobBuffer is provided (not empty).
   [[nodiscard]] NandStatus ReadPage(std::size_t blockIdx, std::size_t pageIdx,
-                                    std::span<Core::Byte> buffer);
+                                    std::span<Core::Byte> buffer,
+                                    std::span<Core::Byte> oobBuffer = {});
 
-  // NOTE (KleaSCM) Programs a page. Matches physical NAND behavior:
-  // Can only transition bits 1->0. If existing bit is 0 and new bit is 1,
-  // operation fails.
-  [[nodiscard]] NandStatus ProgramPage(std::size_t blockIdx,
-                                       std::size_t pageIdx,
-                                       std::span<const Core::Byte> data);
+  // NOTE (KleaSCM) Programs a page and optional OOB.
+  // Enforces bitwise AND constraints on both Data and OOB.
+  [[nodiscard]] NandStatus
+  ProgramPage(std::size_t blockIdx, std::size_t pageIdx,
+              std::span<const Core::Byte> data,
+              std::span<const Core::Byte> oobData = {});
 
-  // NOTE (KleaSCM) Erases an entire block, resetting all bits to 1.
   [[nodiscard]] NandStatus EraseBlock(std::size_t blockIdx);
+
+  [[nodiscard]] std::size_t GetBlockCount() const;
 
 private:
   std::vector<Block> m_Blocks;

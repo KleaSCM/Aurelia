@@ -36,6 +36,24 @@ bool Bus::IsBusy() const {
                             static_cast<Core::Byte>(ControlSignal::Wait))));
 }
 
+bool Bus::Read(Core::Address addr, Core::Data &outData) {
+  for (auto *device : m_Devices) {
+    if (device->IsAddressInRange(addr)) {
+      return device->OnRead(addr, outData);
+    }
+  }
+  return false;
+}
+
+bool Bus::Write(Core::Address addr, Core::Data inData) {
+  for (auto *device : m_Devices) {
+    if (device->IsAddressInRange(addr)) {
+      return device->OnWrite(addr, inData);
+    }
+  }
+  return false;
+}
+
 void Bus::OnTick() {
   // 1. Identify active request
   bool isRead = Core::CheckBit(
@@ -58,12 +76,14 @@ void Bus::OnTick() {
     }
   }
 
+  // 3. Service Request
   if (!target) {
-    // Bus Error: No device found (TODO: trigger fault?)
+    // NOTE (KleaSCM) Bus Fault. Address does not map to any device.
+    SetControl(ControlSignal::Error, true);
     return;
   }
 
-  // 3. Service Request
+  // 4. Execute Transaction
   bool done = false;
   if (isRead) {
     done = target->OnRead(m_State.AddrBus, m_State.DataBus);
@@ -71,7 +91,7 @@ void Bus::OnTick() {
     done = target->OnWrite(m_State.AddrBus, m_State.DataBus);
   }
 
-  // 4. Update Wait Signal
+  // 5. Update Wait Signal
   SetControl(ControlSignal::Wait, !done);
 }
 

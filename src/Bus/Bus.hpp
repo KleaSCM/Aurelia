@@ -27,6 +27,10 @@ public:
   [[nodiscard]] const BusState &GetState() const;
   [[nodiscard]] bool IsBusy() const;
 
+  // Debug / DMA Access (Bypasses timing)
+  bool Read(Core::Address addr, Core::Data &outData);
+  bool Write(Core::Address addr, Core::Data inData);
+
   // System Interface
   void OnTick() override;
 

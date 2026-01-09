@@ -9,7 +9,7 @@
 
 #include "Core/ITickable.hpp"
 #include "Core/System.hpp"
-#include <gtest/gtest.h>
+#include <catch2/catch_test_macros.hpp>
 
 using namespace Aurelia::Core;
 
@@ -21,14 +21,14 @@ public:
   int TickCount = 0;
 };
 
-TEST(SystemTest, ClockIncrements) {
+TEST_CASE("System - ClockIncrements") {
   Clock clk;
-  EXPECT_EQ(clk.GetTotalTicks(), 0);
+  CHECK(clk.GetTotalTicks() == 0);
   clk.Tick();
-  EXPECT_EQ(clk.GetTotalTicks(), 1);
+  CHECK(clk.GetTotalTicks() == 1);
 }
 
-TEST(SystemTest, SystemRun) {
+TEST_CASE("System - SystemRun") {
   System sys;
   MockDevice dev1;
   MockDevice dev2;
@@ -38,7 +38,7 @@ TEST(SystemTest, SystemRun) {
 
   sys.Run(10);
 
-  EXPECT_EQ(sys.GetClock().GetTotalTicks(), 10);
-  EXPECT_EQ(dev1.TickCount, 10);
-  EXPECT_EQ(dev2.TickCount, 10);
+  CHECK(sys.GetClock().GetTotalTicks() == 10);
+  CHECK(dev1.TickCount == 10);
+  CHECK(dev2.TickCount == 10);
 }

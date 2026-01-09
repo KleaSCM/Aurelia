@@ -48,11 +48,9 @@ bool RamDevice::OnRead(Core::Address addr, Core::Data &outData) {
   // Calculate offset
   Core::Address offset = addr - m_BaseAddr;
 
-  // Guard against out of bounds (should be caught by IsAddressInRange but
-  // safety first)
+  // Access overrun check
   if (offset + sizeof(Core::Data) > m_Storage.size()) {
-    outData = 0; // Bus Error?
-    return true;
+    return false;
   }
 
   std::memcpy(&outData, &m_Storage[offset], sizeof(Core::Data));
@@ -77,7 +75,7 @@ bool RamDevice::OnWrite(Core::Address addr, Core::Data inData) {
   Core::Address offset = addr - m_BaseAddr;
 
   if (offset + sizeof(Core::Data) > m_Storage.size()) {
-    return true;
+    return false;
   }
 
   std::memcpy(&m_Storage[offset], &inData, sizeof(Core::Data));
