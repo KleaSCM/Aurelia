@@ -181,10 +181,10 @@
   - [x] Initialize Stack Pointer (`SP`).
   - [x] Initialize Peripherals.
   - [x] Print "System Ready" to UART (Simulated via Main).
-- [ ] **9.2 Integration Tests**
-  - [ ] "Hello World": Assert UART output.
-  - [ ] "SSD Read/Write": Verify persistence via Assembly.
-  - [ ] "Math Test": Verify ALU via Assembly.
+- [x] **9.2 Integration Tests**
+  - [x] "Hello World": Assert UART output.
+  - [x] "SSD Read/Write": Verify persistence via Assembly.
+  - [x] "Math Test": Verify ALU via Assembly.
   - [x] `NvmeControllerTest`: Full Host-Controller-NAND Loop.
   - [x] `CpuPipelineTest`: Pipeline FSM Execution.
   - [x] `FtlPersistenceTest`: Power-loss recovery verification.
