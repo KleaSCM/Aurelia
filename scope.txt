@@ -1,0 +1,75 @@
+# Aurelia - Virtual CPU Ecosystem Scope
+> **Philosophy**: Full architectural emulation. No shortcuts. "Real" implementation from start to finish.
+> **Language**: C++23 (Strict)
+
+## 1. Global Architecture
+- **Time**: 64-bit global `TickCounter`. All components synchronize to this.
+- **Endianness**: Little-Endian.
+- **Word Size**: 64-bit (8 bytes).
+
+## 2. Bus System (The Nervous System)
+A strictly synchronous, tick-based bus.
+- **Address Bus**: 64-bit width.
+- **Data Bus**: 64-bit width.
+- **Control Bus**:
+    - `READ` (Active High)
+    - `WRITE` (Active High)
+    - `READY` (Active High - Slave to Master)
+    - `WAIT` (Active High - Slave tells Master to hold)
+    - `IRQ` (Interrupt Request lines)
+- **Protocol**:
+    - Master sets Address + Control.
+    - Slave responds with WAIT until ready.
+    - Transfer occurs on falling edge of WAIT.
+
+## 3. Storage Subsystem (The Virtual SSD)
+**Goal**: Emulate the physics and logic of NAND Flash, not just file IO.
+- **NAND Physics Simulation**:
+    - Hierarchy: `Package` -> `Die` -> `Plane` -> `Block` -> `Page` -> `Cell`.
+    - **Page Size**: 4KB + 64B OOB (Out of Band/Spare area).
+    - **Block Size**: 64 Pages.
+    - **Constraints**:
+        - Writes can only flip bits 1 -> 0 (Program).
+        - Erase sets bits 0 -> 1 (Erase Block).
+        - Must Erase a whole Block before rewriting pages.
+- **SSD Controller (Firmware Emulation)**:
+    - **Host Interface**: NVMe-like Command Queue (Submission/Completion Queues).
+    - **FTL (Flash Translation Layer)**:
+        - `LBA` (Logical Block Address) to `PBA` (Physical Block Address) mapping table.
+        - Stored in RAM, checkpointed to NAND.
+    - **Garbage Collection (GC)**:
+        - Background process to identify invalid pages (stale data).
+        - Copy valid pages to new block -> Erase old block.
+    - **Wear Leveling**:
+        - Dynamic: Use youngest blocks for hot data.
+        - Static: Rotate cold data to ensure even burn.
+    - **Bad Block Management**: Factory bad blocks + runtime failures.
+
+## 4. Main Memory (RAM)
+- **Structure**: Flat physical array `std::unique_ptr<uint8_t[]>`.
+- **Size**: Configurable, default 4GB.
+- **Controller**:
+    - Handles Bank activation/Row buffer delays (simulated latency).
+    - Supports Burst Mode (optional).
+
+## 5. Central Processing Unit (CPU)
+**Architecture**: RISC-like, Load/Store.
+- **Register File (RFile)**:
+    - `R0` - `R15` (General Purpose, 64-bit).
+    - `PC` (Program Counter).
+    - `SP` (Stack Pointer).
+    - `SR` (Status Register): [Z]ero, [C]arry, [O]verflow, [N]egative, [I]nterruptDisable.
+- **ALU (Arithmetic Logic Unit)**:
+    - Operations: ADD, SUB, MUL, DIV, AND, OR, XOR, NOT, LSH, RSH.
+    - Updates SR flags based on result.
+- **Control Unit (CU)**:
+    - Micro-coded or State Machine (Fetch -> Decode -> Execute -> Memory -> Writeback).
+    - Handles Branch predication (static/dynamic).
+    - Handles Hardware Interrupts from the Bus.
+- **Instruction Set (ISA)**:
+    - Fixed width (32-bit instructions) for simplified decoding? Or Variable? -> Decision: **Fixed 32-bit**.
+    - Opcode | DestReg | SrcReg1 | SrcReg2/Immediate.
+
+## 6. Input/Output (IO)
+- **UART**: Simple serial output for debug console.
+- **Timer**: Programmable Interval Timer for OS scheduling.
