@@ -33,9 +33,25 @@ enum class Register : std::uint8_t {
   R13,
   R14,
   R15,
-  SP = R14, // R14 alias
-  LR = R15, // R15 alias (Link Register)
-  Count = 16
+  R16,
+  R17,
+  R18,
+  R19,
+  R20,
+  R21,
+  R22,
+  R23,
+  R24,
+  R25,
+  R26,
+  R27,
+  R28,
+  R29,
+  R30,
+  R31,
+  SP = R30, // Stack Pointer (R30 alias)
+  LR = R31, // Link Register (R31 alias)
+  Count = 32
 };
 
 // NOTE (KleaSCM) Architectural Status Flags.

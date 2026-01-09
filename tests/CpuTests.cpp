@@ -45,5 +45,5 @@ TEST_CASE("Cpu - RegisterAccess") {
   cpu.SetRegister(Register::SP, 0x100);
 
   CHECK(cpu.GetRegister(Register::R5) == 42);
-  CHECK(cpu.GetRegister(Register::R14) == 0x100); // SP is R14 alias
+  CHECK(cpu.GetRegister(Register::SP) == 0x100); // Check SP alias
 }

@@ -66,14 +66,15 @@ TEST_CASE_METHOD(CpuPipelineTest, "CpuPipeline - ExecuteADD") {
   // Program: ADD R1, R2, R3
   // R2 = 10, R3 = 20
   // Opcode ADD (0x01) | Rd(1) | Rn(2) | Rm(3) | 000
-  // Raw: 0x01123000
+  // Value: 0x04000000 | 0x00200000 | 0x00020000 | 0x00001800
+  // Raw: 0x04221800
 
   // Setup Registers
   cpu.SetRegister(Register::R2, 10);
   cpu.SetRegister(Register::R3, 20);
 
   // Load Instruction at 0
-  mem.Storage[0] = 0x01123000;
+  mem.Storage[0] = 0x04221800;
 
   // Run Pipeline
   // Tick 1: Fetch (Req)
@@ -105,9 +106,9 @@ TEST_CASE_METHOD(CpuPipelineTest, "CpuPipeline - ExecuteADD") {
 TEST_CASE_METHOD(CpuPipelineTest, "CpuPipeline - ExecuteBranch") {
   // Program: B #8
   // Opcode B (0x30) | Imm=8
-  // Raw: 0x30000008
+  // Raw: 0xC0000008
 
-  mem.Storage[0] = 0x30000008;
+  mem.Storage[0] = 0xC0000008;
 
   // Fetch -> Decode -> Execute (Branch Taken) -> Fetch (Target)
 
@@ -130,11 +131,11 @@ TEST_CASE_METHOD(CpuPipelineTest, "CpuPipeline - ExecuteLDR") {
   // Program: LDR R5, [R2, #0]
   // R2 = 0x100
   // Opcode LDR (0x10) | Rd(5) | Rn(2) | Imm(0)
-  // Raw: 0x10520000
+  // Raw: 0x40A20000
 
   // Setup Data
   cpu.SetRegister(Register::R2, 0x100);
-  mem.Storage[0] = 0x10520000;     // Instruction at 0
+  mem.Storage[0] = 0x40A20000;     // Instruction at 0
   mem.Storage[0x100] = 0xDEADBEEF; // Data at 0x100
 
   // 1. Fetch Req

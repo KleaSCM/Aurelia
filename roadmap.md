@@ -99,6 +99,79 @@
   - [x] Define `StatusRegister` with Flag bitfields.
 - [x] **5.2 Arithmetic Logic Unit (ALU)**
   - [x] Create `class Alu`.
+  - [x] Implement ADD, SUB, AND, OR, XOR.
+  - [x] Implement Shifts (LSL, LSR).
+  - [x] Implement Flags (Z, N, C, V).
+- [x] **5.3 Control Unit & Pipeline**
+  - [x] Implement Fetch-Decode-Execute Stages.
+  - [x] Implement `Decoder::Decode()`.
+  - [x] Implement `Cpu::OnTick()` FSM.
+
+## 6. The Toolchain (Assembler)
+
+*Building the language to speak to the machine.*
+
+- [ ] **6.1 Lexer (Tokenization)**
+  - [ ] Define Token Types (Mnemonic, Register, Immediate, Label, Comma).
+  - [ ] Implement `Lexer::Tokenize(source)`.
+  - [ ] Handle comments and whitespace.
+- [ ] **6.2 Parser (Syntax Analysis)**
+  - [ ] Parse Instructions (`ADD R0, R1`).
+  - [ ] Parse Labels (`loop:`).
+  - [ ] Parse Directives (`.data`, `.text`).
+- [ ] **6.3 Symbol Table**
+  - [ ] First Pass: Record Label addresses.
+  - [ ] Second Pass: Resolve Label references.
+- [ ] **6.4 Code Generation (Encoder)**
+  - [ ] Implement Instruction Encoding (Data Processing, Memory, Branch).
+  - [ ] Handle Immediate encodings.
+- [ ] **6.5 CLI Tool**
+  - [ ] Read `.asm` files.
+  - [ ] Output flat binary `.bin`.
+
+## 7. System Integration (The Motherboard)
+
+*Wiring components together into a functional machine.*
+
+- [ ] **7.1 Memory Map Definition**
+  - [ ] Define Address Ranges:
+    - `0x00000000` - Boot ROM / RAM
+    - `0xE0000000` - MMIO (UART, SSD, PIC)
+- [ ] **7.2 Bus Interconnect**
+  - [ ] Update `main.cpp` to instantiate `System`, `Bus`, `Cpu`, `Ram`, `Ssd`.
+  - [ ] Map Devices to Bus addresses.
+- [ ] **7.3 Reset Logic**
+  - [ ] Implement Power-On Reset vector (PC = 0).
+  - [ ] Load binary image into RAM at startup.
+
+## 8. I/O & Peripherals
+
+*Giving the system senses.*
+
+- [ ] **8.1 UART Controller (Serial Console)**
+  - [ ] Map to `0xE0000000`.
+  - [ ] Implement `Write` (Transmit char to stdout).
+  - [ ] Implement `Read` (Receive char from stdin).
+- [ ] **8.2 Programmable Interrupt Controller (PIC)**
+  - [ ] Manage Interrupt Request (IRQ) lines.
+  - [ ] Signal CPU to pause and handle standard ISRs.
+- [ ] **8.3 System Timer**
+  - [ ] Map to `0xE0000100`.
+  - [ ] Fire IRQ at fixed intervals.
+
+## 9. System Software (Verification)
+
+*Proof of Life.*
+
+- [ ] **9.1 The Bootloader**
+  - [ ] Initialize Stack Pointer (`SP`).
+  - [ ] Initialize Peripherals.
+  - [ ] Print "System Ready" to UART.
+- [ ] **9.2 Integration Tests**
+  - [ ] "Hello World": Assert UART output.
+  - [ ] "SSD Read/Write": Verify persistence via Assembly.
+  - [ ] "Math Test": Verify ALU via Assembly.
+  - [x] Create `class Alu`.
   - [x] Implement `Add(a, b)` with Carry/Overflow detection.
   - [x] Implement `Sub(a, b)` with Borrow detection.
   - [x] Implement `BitwiseAnd`, `BitwiseOr`, `BitwiseXor`.

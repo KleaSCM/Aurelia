@@ -15,12 +15,13 @@ using namespace Aurelia::Core;
 
 TEST_CASE("Decoder - DecodeRegisterArithmetic") {
   // ADD R1, R2, R3
-  // Opcode ADD (0x01)
-  // Rd (R1) = 1
-  // Rn (R2) = 2
-  // Rm (R3) = 3
-  // 0x01 1 2 3 000
-  std::uint32_t raw = 0x01123000;
+  // Opcode ADD (0x01) << 26
+  // Rd (R1) = 1 << 21
+  // Rn (R2) = 2 << 16
+  // Rm (R3) = 3 << 11
+  // Imm = 0
+  // Value: 0x04000000 | 0x00200000 | 0x00020000 | 0x00001800
+  std::uint32_t raw = 0x04221800;
 
   Instruction instr = Decoder::Decode(raw);
 
@@ -33,11 +34,10 @@ TEST_CASE("Decoder - DecodeRegisterArithmetic") {
 
 TEST_CASE("Decoder - DecodeImmediateMove") {
   // MOV R5, #255
-  // Opcode MOV (0x20)
-  // Rd (R5) = 5
+  // Opcode MOV (0x20) << 26 = 0x80000000
+  // Rd (R5) = 5 << 21 = 0x00A00000
   // Immediate = 0xFF
-  // 0x20 5 0 0 0FF
-  std::uint32_t raw = 0x205000FF;
+  std::uint32_t raw = 0x80A000FF;
 
   Instruction instr = Decoder::Decode(raw);
 
@@ -48,15 +48,14 @@ TEST_CASE("Decoder - DecodeImmediateMove") {
 }
 
 TEST_CASE("Decoder - DecodeBranch") {
-  // B 0xABC
-  // Opcode B (0x30)
-  // Imm = 0xABC
-  // 0x30 0 0 0 ABC
-  std::uint32_t raw = 0x30000ABC;
+  // B 0x2BC (Fits in 11 bits)
+  // Opcode B (0x30) << 26 = 0xC0000000
+  // Imm = 0x2BC
+  std::uint32_t raw = 0xC00002BC;
 
   Instruction instr = Decoder::Decode(raw);
 
   CHECK(instr.Op == Opcode::B);
-  CHECK(instr.Immediate == 0xABC);
+  CHECK(instr.Immediate == 0x2BC);
   CHECK(instr.Type == InstrType::Branch);
 }

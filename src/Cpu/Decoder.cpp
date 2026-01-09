@@ -13,21 +13,21 @@ Instruction Decoder::Decode(std::uint32_t rawInstr) {
   Instruction instr = {};
 
   // Extract Fields
-  // [31:24] Opcode
-  Core::Byte opByte = static_cast<Core::Byte>((rawInstr >> 24) & 0xFF);
+  // [31:26] Opcode (6 bits)
+  Core::Byte opByte = static_cast<Core::Byte>((rawInstr >> 26) & 0x3F);
   instr.Op = static_cast<Opcode>(opByte);
 
-  // [23:20] Rd
-  instr.Rd = static_cast<Register>((rawInstr >> 20) & 0x0F);
+  // [25:21] Rd (5 bits)
+  instr.Rd = static_cast<Register>((rawInstr >> 21) & 0x1F);
 
-  // [19:16] Rn
-  instr.Rn = static_cast<Register>((rawInstr >> 16) & 0x0F);
+  // [20:16] Rn (5 bits)
+  instr.Rn = static_cast<Register>((rawInstr >> 16) & 0x1F);
 
-  // [15:12] Rm
-  instr.Rm = static_cast<Register>((rawInstr >> 12) & 0x0F);
+  // [15:11] Rm (5 bits)
+  instr.Rm = static_cast<Register>((rawInstr >> 11) & 0x1F);
 
-  // [11: 0] Immediate (12 bits)
-  instr.Immediate = rawInstr & 0xFFF;
+  // [10: 0] Immediate (11 bits)
+  instr.Immediate = rawInstr & 0x7FF;
 
   // Determine Type based on Opcode
   switch (instr.Op) {

@@ -4,11 +4,11 @@
  * Defines the Instruction Format and Opcode mappings.
  *
  * Instruction Format (32-bit):
- * [31:24] Opcode (8 bits)
- * [23:20] Rd (Dest Register)
- * [19:16] Rn (Source 1)
- * [15:12] Rm (Source 2)
- * [11: 0] Immediate / Reserved
+ * [31:26] Opcode (6 bits)
+ * [25:21] Rd (Dest Register - 5 bits)
+ * [20:16] Rn (Source 1 - 5 bits)
+ * [15:11] Rm (Source 2 - 5 bits)
+ * [10: 0] Immediate / Reserved (11 bits)
  *
  * Author: KleaSCM
  * Email: KleaSCM@gmail.com
@@ -32,6 +32,8 @@ enum class Opcode : Core::Byte {
   XOR = 0x05,
   LSL = 0x06,
   LSR = 0x07,
+  ASR = 0x08,
+  CMP = 0x09,
 
   // Memory
   LDR = 0x10, // Load Register
