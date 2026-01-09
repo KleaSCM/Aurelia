@@ -48,14 +48,23 @@ void Parser::ParseStatement() {
 
   // Unexpected token
   Error(Peek(), "Unexpected token in statement: " + Peek().Text);
-  Advance(); // Panic recovery: skip token
+  Synchronize();
 }
 
 void Parser::ParseLabel() {
-  Token token = Advance();
-  m_Labels.push_back({token.Text, m_Instructions.size()});
-  // The Lexer strips the colon from the label text.
-  // We record the label position pointing to the next instruction index.
+  if (Check(TokenType::Label)) {
+    Token token = Advance();
+    // Check duplicates
+    if (m_DefinedLabels.contains(token.Text)) {
+      Error(token, "Duplicate label definition: " + token.Text);
+      return;
+    }
+
+    m_Labels.push_back({token.Text, m_Instructions.size()});
+    m_DefinedLabels.insert(token.Text);
+
+    // Lexer strips colon.
+  }
 }
 
 void Parser::ParseDirective() {
@@ -85,9 +94,46 @@ void Parser::ParseStringDirective() {
     return;
   }
 
-  std::string val = Previous().Text;
-  for (char c : val) {
-    m_DataSegment.push_back(static_cast<std::uint8_t>(c));
+  std::string raw = Previous().Text;
+  if (raw.size() >= 2 && raw.front() == '"' && raw.back() == '"') {
+    raw = raw.substr(1, raw.size() - 2);
+  }
+
+  for (size_t i = 0; i < raw.size(); ++i) {
+    char c = raw[i];
+    if (c == '\\' && i + 1 < raw.size()) {
+      char next = raw[i + 1];
+      switch (next) {
+      case 'n':
+        m_DataSegment.push_back('\n');
+        break;
+      case 't':
+        m_DataSegment.push_back('\t');
+        break;
+      case 'r':
+        m_DataSegment.push_back('\r');
+        break;
+      case '0':
+        m_DataSegment.push_back('\0');
+        break;
+      case '\\':
+        m_DataSegment.push_back('\\');
+        break;
+      case '"':
+        m_DataSegment.push_back('"');
+        break;
+      default:
+        m_DataSegment.push_back(static_cast<std::uint8_t>(c)); // Keep backslash
+        m_DataSegment.push_back(static_cast<std::uint8_t>(next));
+        break;
+      }
+      if (next == 'n' || next == 't' || next == 'r' || next == '0' ||
+          next == '\\' || next == '"') {
+        i++; // Skip next char
+      }
+    } else {
+      m_DataSegment.push_back(static_cast<std::uint8_t>(c));
+    }
   }
   m_DataSegment.push_back(0); // Null terminator
 }
@@ -126,9 +172,13 @@ void Parser::ParseInstruction() {
   // Parse Operands (comma separated)
   if (!Check(TokenType::NewLine) && !IsAtEnd()) {
     do {
-      instr.Operands.push_back(ParseOperand());
-      if (m_HasError)
-        break;
+      auto op = ParseOperand();
+      if (op.Type == OperandType::Invalid) {
+        // Error already reported
+        Synchronize();
+        return;
+      }
+      instr.Operands.push_back(op);
     } while (Match(TokenType::Comma));
   }
 
@@ -155,7 +205,7 @@ Operand Parser::ParseOperand() {
   }
 
   Error(Peek(), "Expected Operand (Register, Immediate, Memory, or Label)");
-  return {};
+  return {OperandType::Invalid, {}};
 }
 
 Operand Parser::ParseMemoryOperand() {
@@ -163,12 +213,13 @@ Operand Parser::ParseMemoryOperand() {
 
   // Base Register (Required)
   Operand baseOp = ParseRegister();
-  if (m_HasError)
-    return {};
+  if (baseOp.Type == OperandType::Invalid)
+    return {OperandType::Invalid, {}};
 
+  // Safety check - though ParseRegister ensures Type=Register or Invalid
   if (!std::holds_alternative<RegisterOperand>(baseOp.Value)) {
     Error(Previous(), "Memory operand must start with a Register");
-    return {};
+    return {OperandType::Invalid, {}};
   }
   RegisterOperand baseReg = std::get<RegisterOperand>(baseOp.Value);
 
@@ -176,11 +227,15 @@ Operand Parser::ParseMemoryOperand() {
   std::int64_t offset = 0;
   if (Match(TokenType::Comma)) {
     Operand offsetOp = ParseImmediate();
+    if (offsetOp.Type == OperandType::Invalid)
+      return {OperandType::Invalid, {}};
+
     if (std::holds_alternative<ImmediateOperand>(offsetOp.Value)) {
       offset = static_cast<std::int64_t>(
           std::get<ImmediateOperand>(offsetOp.Value).Value);
     } else {
       Error(Previous(), "Memory offset must be an Immediate");
+      return {OperandType::Invalid, {}};
     }
   }
 
@@ -193,6 +248,10 @@ Operand Parser::ParseMemoryOperand() {
 }
 
 Operand Parser::ParseRegister() {
+  if (!Check(TokenType::Register)) {
+    Error(Peek(), "Expected Register");
+    return {OperandType::Invalid, {}};
+  }
   Token token = Advance(); // Consume Register token
   std::string text = token.Text;
 
@@ -216,11 +275,11 @@ Operand Parser::ParseRegister() {
                                   regIndex);
     if (result.ec != std::errc()) {
       Error(token, "Invalid Register Format");
-      return {};
+      return {OperandType::Invalid, {}};
     }
   } else {
     Error(token, "Unknown Register Name");
-    return {};
+    return {OperandType::Invalid, {}};
   }
 
   Operand op;
@@ -230,20 +289,28 @@ Operand Parser::ParseRegister() {
 }
 
 Operand Parser::ParseImmediate() {
+  if (!Check(TokenType::Immediate)) {
+    Error(Peek(), "Expected Immediate");
+    return {OperandType::Invalid, {}};
+  }
   Token token = Advance();
   // Lexer 'Value' holds the parsed number
-  std::uint64_t val = 0;
-  if (token.Value.has_value()) {
-    val = token.Value.value();
+  if (!token.Value.has_value()) {
+    Error(token, "Immediate token missing numeric value");
+    return {OperandType::Invalid, {}};
   }
 
   Operand op;
   op.Type = OperandType::Immediate;
-  op.Value = ImmediateOperand{val};
+  op.Value = ImmediateOperand{token.Value.value()};
   return op;
 }
 
 Operand Parser::ParseLabelRef() {
+  if (!Check(TokenType::LabelRef)) {
+    Error(Peek(), "Expected Label Reference");
+    return {OperandType::Invalid, {}};
+  }
   Token token = Advance();
   Operand op;
   op.Type = OperandType::Label;

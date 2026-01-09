@@ -94,7 +94,7 @@
 
 - [x] **5.1 Register File (`Cpu/`)**
   - [x] Create `class RegisterFile`.
-  - [x] Define 16 `uint64_t` registers.
+  - [x] Define 32 `uint64_t` registers (R0-R31).
   - [x] Define `ProgramCounter` and `StackPointer`.
   - [x] Define `StatusRegister` with Flag bitfields.
 - [x] **5.2 Arithmetic Logic Unit (ALU)**
@@ -112,13 +112,13 @@
 *Building the language to speak to the machine.*
 
 - [ ] **6.1 Lexer (Tokenization)**
-  - [ ] Define Token Types (Mnemonic, Register, Immediate, Label, Comma).
-  - [ ] Implement `Lexer::Tokenize(source)`.
-  - [ ] Handle comments and whitespace.
+  - [x] Define Token Types (Mnemonic, Register, Immediate, Label, Comma).
+  - [x] Implement `Lexer::Tokenize(source)`.
+  - [x] Handle comments and whitespace.
 - [ ] **6.2 Parser (Syntax Analysis)**
-  - [ ] Parse Instructions (`ADD R0, R1`).
-  - [ ] Parse Labels (`loop:`).
-  - [ ] Parse Directives (`.data`, `.text`).
+  - [x] Parse Instructions (`ADD R0, R1`).
+  - [x] Parse Labels (`loop:`).
+  - [x] Parse Directives (`.data`, `.text`).
 - [ ] **6.3 Symbol Table**
   - [ ] First Pass: Record Label addresses.
   - [ ] Second Pass: Resolve Label references.

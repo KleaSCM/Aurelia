@@ -19,6 +19,7 @@
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <unordered_set>
 #include <variant>
 #include <vector>
 
@@ -27,6 +28,7 @@ namespace Aurelia::Tools::Assembler {
 // -- AST Definitions --
 
 enum class OperandType {
+  Invalid,
   Register,
   Immediate,
   Memory, // [Rn, #Imm] etc.
@@ -119,6 +121,7 @@ private:
   std::vector<ParsedInstruction> m_Instructions;
   std::vector<std::uint8_t> m_DataSegment;
   std::vector<LabelDef> m_Labels;
+  std::unordered_set<std::string> m_DefinedLabels;
 
   bool m_HasError = false;
   std::string m_ErrorMessage;
