@@ -42,9 +42,11 @@ private:
   // Active Block State
   std::size_t m_CurrentActiveBlock = 0;
   std::size_t m_CurrentPageOffset = 0;
+  bool m_IsGarbageCollecting = false;
 
   void ScanAndMount();
   std::size_t AllocateNewActiveBlock();
+  bool GarbageCollect();
   void MarkBlockFull(std::size_t blockIdx);
 };
 

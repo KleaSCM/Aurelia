@@ -46,7 +46,6 @@ AluResult Alu::Execute(AluOp op, Core::Word a, Core::Word b,
     // Overflow (V) = (Operand signs differ) AND (Result sign differs from OpA)
     // For SUB logic: A - B is A + (-B).
     res.NewFlags.V = (aNeg != bNeg) && (aNeg != rNeg);
-    res.NewFlags.V = (aNeg != bNeg) && (rNeg != aNeg);
     break;
   }
   case AluOp::AND:

@@ -7,6 +7,7 @@
 
 #include "Storage/FTL/Ftl.hpp"
 #include <algorithm>
+#include <bit>
 #include <cstring>
 #include <limits>
 
@@ -88,8 +89,14 @@ void Ftl::ScanAndMount() {
 
 std::size_t Ftl::AllocateNewActiveBlock() {
   if (m_FreeList.empty()) {
-    // Garbage Collection would be triggered here.
-    return std::numeric_limits<std::size_t>::max();
+    if (!GarbageCollect()) {
+      return std::numeric_limits<std::size_t>::max();
+    }
+    // Check again! GC might have succeeded but consumed the block immediately
+    // (CopyBack)
+    if (m_FreeList.empty()) {
+      return std::numeric_limits<std::size_t>::max();
+    }
   }
 
   std::size_t newBlock = m_FreeList.back();
@@ -175,6 +182,88 @@ Nand::NandStatus Ftl::Read(Lba lba, std::span<Core::Byte> buffer) {
   std::size_t page = pba % 64;
 
   return m_Nand->ReadPage(block, page, buffer);
+}
+
+bool Ftl::GarbageCollect() {
+  // 1. Greedy Victim Selection
+  // Find the block with the MAXIMUM number of INVALID pages (Least Valid).
+  std::size_t victimBlock = std::numeric_limits<std::size_t>::max();
+  std::size_t minValidPages = 65; // Max is 64
+
+  for (std::size_t i = 0; i < m_TotalBlocks; ++i) {
+    if (i == m_CurrentActiveBlock)
+      continue;
+
+    const auto &info = m_BlockTable[i];
+    // Only consider blocks that have some data (Active or Full)
+    if (info.State == BlockState::Free || info.State == BlockState::Bad)
+      continue;
+
+    // Count set bits in ValidPageBitmap
+    std::size_t validCount =
+        static_cast<std::size_t>(std::popcount(info.ValidPageBitmap));
+
+    if (validCount < minValidPages) {
+      minValidPages = validCount;
+      victimBlock = i;
+    }
+  }
+
+  if (victimBlock == std::numeric_limits<std::size_t>::max()) {
+    // No suitable victim found.
+    return false;
+  }
+
+  // 2. Valid Page Migration (Copy-Back)
+  // Read valid pages to RAM.
+  struct PageBuffer {
+    std::vector<Core::Byte> Data;
+    Lba LogicalAddr;
+  };
+  std::vector<PageBuffer> validPages;
+
+  std::vector<Core::Byte> buffer(Nand::PageDataSize);
+  std::vector<Core::Byte> oob(Nand::OobSize);
+
+  for (std::size_t p = 0; p < 64; ++p) {
+    if (m_BlockTable[victimBlock].ValidPageBitmap & (1ULL << p)) {
+      if (m_Nand->ReadPage(victimBlock, p, buffer, oob) ==
+          Nand::NandStatus::Success) {
+        OobMetadata meta;
+        std::memcpy(&meta, oob.data(), sizeof(OobMetadata));
+
+        // Sanity Check: Is this page actually mapped?
+        if (m_MappingTable.contains(meta.LogicalAddress)) {
+          Pba expectedPba = static_cast<Pba>((victimBlock * 64) + p);
+          if (m_MappingTable[meta.LogicalAddress] == expectedPba) {
+            validPages.push_back({buffer, meta.LogicalAddress});
+          }
+        }
+      }
+    }
+  }
+
+  // 3. Erase Victim
+  if (m_Nand->EraseBlock(victimBlock) != Nand::NandStatus::Success) {
+    m_BlockTable[victimBlock].State = BlockState::Bad;
+    return false;
+  }
+
+  m_BlockTable[victimBlock].State = BlockState::Free;
+  m_BlockTable[victimBlock].ValidPageBitmap = 0;
+  m_BlockTable[victimBlock].EraseCount++;
+
+  // 4. Commit Victim to Free List
+  m_FreeList.push_back(victimBlock);
+
+  // 5. Write Back (Resurrect Valid Data)
+  for (const auto &page : validPages) {
+    if (Write(page.LogicalAddr, page.Data) != Nand::NandStatus::Success) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 } // namespace Aurelia::Storage::FTL
