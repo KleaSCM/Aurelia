@@ -14,6 +14,7 @@
 #include "System/Loader.hpp"
 #include "System/MemoryMap.hpp"
 #include <catch2/catch_test_macros.hpp>
+#include <iostream>
 
 using namespace Aurelia;
 using namespace Aurelia::System;
@@ -34,7 +35,7 @@ TEST_CASE("System - Load and Execute Simple Program") {
 
   // Setup components
   Bus::Bus bus;
-  Memory::RamDevice ram(RamSize);
+  Memory::RamDevice ram(RamSize, 0); // Zero latency for instant writes
   Cpu::Cpu cpu;
 
   // Connect to bus
@@ -51,20 +52,27 @@ TEST_CASE("System - Load and Execute Simple Program") {
 
   // Load program into RAM
   Loader loader(bus);
-  REQUIRE(loader.LoadData(program, ResetVector));
+  bool loaded = loader.LoadData(program, ResetVector);
+  if (!loaded) {
+    std::cerr << "Load failed: " << loader.GetErrorMessage() << "\n";
+  }
+  REQUIRE(loaded);
 
   // Reset CPU (PC = 0x0)
   cpu.Reset(ResetVector);
   REQUIRE(cpu.GetPC() == 0x0);
 
-  // Execute until we've processed enough cycles
-  // (Fetch + Decode + Execute + Memory + WriteBack = 5 cycles per instruction)
-  for (int i = 0; i < 50 && cpu.GetPC() < 16; ++i) {
+  // Execute until HALT or timeout
+  for (int i = 0; i < 50 && !cpu.IsHalted(); ++i) {
     cpu.OnTick();
     bus.OnTick();
   }
 
-  // Verify R0 contains 42
+  // Verify HALT was reached and R0 = 42
+  std::cerr << "Final: Halted=" << cpu.IsHalted() << " PC=0x" << std::hex
+            << cpu.GetPC() << std::dec
+            << " R0=" << cpu.GetRegister(Cpu::Register::R0) << "\n";
+  REQUIRE(cpu.IsHalted());
   REQUIRE(cpu.GetRegister(Cpu::Register::R0) == 42);
 }
 

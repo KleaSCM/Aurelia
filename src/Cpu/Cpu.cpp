@@ -23,6 +23,7 @@ void Cpu::Reset(Core::Address startAddress) {
   m_Flags = {};
   m_GPR.fill(0);
   m_MicroOp = 0;
+  m_Halted = false;
 }
 
 Core::Word Cpu::GetRegister(Register reg) const {
@@ -40,7 +41,7 @@ void Cpu::SetPC(Core::Address value) { m_PC = value; }
 const Flags &Cpu::GetFlags() const { return m_Flags; }
 
 void Cpu::OnTick() {
-  if (!m_Bus)
+  if (!m_Bus || m_Halted)
     return;
 
   switch (m_State) {
@@ -118,6 +119,10 @@ void Cpu::OnTick() {
       m_OpA = 0;
       aluOp = AluOp::ADD;
       break;
+    case Opcode::Halt:
+      // HALT instruction - stop execution
+      m_Halted = true;
+      return;
     default:
       break;
     }

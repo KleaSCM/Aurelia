@@ -77,7 +77,7 @@ int main(int argc, char *argv[]) {
   std::cout << "Initializing hardware...\n";
 
   Bus::Bus bus;
-  Memory::RamDevice ram(System::RamSize);
+  Memory::RamDevice ram(System::RamSize, 0); // Zero latency
   Cpu::Cpu cpu;
 
   // Storage controller (optional, for future use)

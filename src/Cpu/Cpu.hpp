@@ -40,6 +40,7 @@ public:
 
   [[nodiscard]] const Flags &GetFlags() const;
   [[nodiscard]] CpuState GetState() const { return m_State; }
+  [[nodiscard]] bool IsHalted() const { return m_Halted; }
 
 private:
   Bus::Bus *m_Bus = nullptr;
@@ -59,7 +60,8 @@ private:
   Core::Word m_AluResult = 0; // Execute -> Memory/WB
   Core::Data m_MemData = 0;   // Memory -> WB
 
-  int m_MicroOp = 0; // For multi-cycle stages (Fetch/Memory)
+  bool m_Halted = false; // HALT instruction executed
+  int m_MicroOp = 0;     // For multi-cycle stages (Fetch/Memory)
 };
 
 } // namespace Aurelia::Cpu

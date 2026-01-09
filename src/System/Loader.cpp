@@ -97,43 +97,19 @@ bool Loader::WriteToBus(const std::vector<std::uint8_t> &data,
   /**
    * BUS WRITE STRATEGY
    *
-   * We write data to the Bus one byte at a time using 8-bit writes.
-   * The Bus will:
-   * 1. Decode the address
-   * 2. Select the RAM device
-   * 3. Route the write to RAM
-   *
-   * NOTE (KleaSCM) In a real system this would be a DMA transfer
-   * or burst write for efficiency. Here we simulate byte-by-byte
-   * writes for simplicity and to exercise the Bus interface.
-   *
-   * BYTE ORDER:
-   * Data is written in the same order it appears in the file.
-   * Assembler outputs little-endian, so multi-byte values will
-   * have LSB first, MSB last.
+   * Use Bus::Write() for direct DMA-style writes.
+   * This bypasses the transactional timing and writes immediately.
    */
   for (std::size_t i = 0; i < data.size(); ++i) {
     Address addr = loadAddress + i;
     Core::Data byteData = static_cast<Core::Data>(data[i]);
 
-    // Set address and data on Bus
-    m_Bus.SetAddress(addr);
-    m_Bus.SetData(byteData);
-
-    // Initiate write transaction
-    m_Bus.SetControl(Bus::ControlSignal::Write, true);
-    m_Bus.OnTick(); // Process the write
-    m_Bus.SetControl(Bus::ControlSignal::Write, false);
-
-    /**
-     * ERROR DETECTION
-     *
-     * If the Bus signals an error (e.g., no device at this address,
-     * device reported failure), we abort the load immediately.
-     *
-     * TODO (Future): Add proper error signaling from Bus
-     * For now, we assume all writes succeed if we're in RAM range.
-     */
+    if (!m_Bus.Write(addr, byteData)) {
+      std::ostringstream oss;
+      oss << "Write failed at 0x" << std::hex << addr;
+      m_ErrorMessage = oss.str();
+      return false;
+    }
   }
 
   m_ErrorMessage.clear();

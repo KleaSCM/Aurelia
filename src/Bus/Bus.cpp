@@ -7,6 +7,7 @@
 
 #include "Bus/Bus.hpp"
 #include "Core/BitManip.hpp"
+#include <iostream>
 
 namespace Aurelia::Bus {
 
@@ -51,6 +52,9 @@ bool Bus::Write(Core::Address addr, Core::Data inData) {
       return device->OnWrite(addr, inData);
     }
   }
+  // DEBUG: No device found for this address
+  std::cerr << "Bus::Write - No device for addr 0x" << std::hex << addr
+            << " (devices: " << std::dec << m_Devices.size() << ")\n";
   return false;
 }
 

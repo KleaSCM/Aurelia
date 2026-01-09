@@ -45,7 +45,7 @@ enum class Opcode : Core::Byte {
   BEQ = 0x31, // Branch Equal (Z=1)
   BNE = 0x32, // Branch Not Equal (Z=0)
 
-  Halt = 0xFF
+  Halt = 0x3F // NOTE: Changed from 0xFF to fit in 6-bit opcode field
 };
 
 enum class InstrType {

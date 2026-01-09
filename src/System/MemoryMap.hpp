@@ -69,10 +69,6 @@ constexpr std::size_t RamSize = 256 * 1024 * 1024; // 256 MB
 constexpr Address RamEnd = RamBase + RamSize - 1;  // 0x0FFF_FFFF
 
 /**
- * MMIO Region Base
- *
- * All memory-mapped I/O devices live at addresses >= 0xE000_0000.
- * This keeps the low 3.5 GB of address space clean for RAM and future
  * expansion.
  */
 constexpr Address MmioBase = 0xE0000000;
