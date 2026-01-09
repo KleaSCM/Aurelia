@@ -2,7 +2,7 @@
 
 > [!IMPORTANT]
 > **Status**: EXECUTION
-> **Scope**: Full Ecosystem Emulation (CPU, Bus, RAM, SSD/FTL, IO)
+> **Scope**: Full Ecosystem Emulation (CPU, Bus, RAM, SSD/FTL, IO, GPU, HID, OS)
 > **Stack**: C++23, CMake, Ninja
 
 ## 1. Global Infrastructure & Tooling
@@ -109,8 +109,6 @@
 
 ## 6. The Toolchain (Assembler)
 
-*Building the language to speak to the machine.*
-
 - [x] **6.1 Lexer (Tokenization)**
   - [x] Define Token Types (Mnemonic, Register, Immediate, Label, Comma).
   - [x] Implement `Lexer::Tokenize(source)`.
@@ -145,8 +143,6 @@
 
 ## 7. System Integration (The Motherboard)
 
-*Wiring components together into a functional machine.*
-
 - [x] **7.1 Memory Map Definition**
   - [x] Define Address Ranges:
     - `0x00000000` - Boot ROM / RAM
@@ -159,8 +155,6 @@
   - [x] Load binary image into RAM at startup.
 
 ## 8. I/O & Peripherals
-
-*Giving the system senses.*
 
 - [x] **8.1 UART Controller (Serial Console)**
   - [x] Map to `0xE0001000`.
@@ -188,3 +182,40 @@
   - [x] `NvmeControllerTest`: Full Host-Controller-NAND Loop.
   - [x] `CpuPipelineTest`: Pipeline FSM Execution.
   - [x] `FtlPersistenceTest`: Power-loss recovery verification.
+
+## 10. Graphics
+
+- [ ] **10.1 Keyboard Controller (KBC)**
+  - [ ] Implement `KeyboardDevice` (MMIO).
+  - [ ] Implement FIFO Buffer for keystrokes.
+  - [ ] Integrate Host Input (SDL2/Terminal) -> KBC FIFO.
+  - [ ] Fire IRQ on Key Press.
+- [ ] **10.2 Mouse Controller**
+  - [ ] Implement `MouseDevice` (X, Y, Buttons).
+  - [ ] Fire IRQ on Movement/Click.
+
+## 11. Input
+
+- [ ] **11.1 Video Memory (VRAM)**
+  - [ ] Implement `GpuDevice` class implementation of `IBusDevice`.
+  - [ ] Allocate VRAM buffer (e.g., 640x480 x 32-bit RGBA).
+  - [ ] Map VRAM to MMIO space (e.g., `0xF0000000`).
+- [ ] **11.2 Display Controller**
+  - [ ] Implement `RenderLoop` (Integrate SDL2 or simple PPM/BMP output for MVP).
+  - [ ] Implement `Scan-Out Logic` (Reads VRAM and updates Host Window).
+- [ ] **11.3 2D Acceleration**
+  - [ ] Implement Hardware Blit (Copy Rect).
+  - [ ] Implement Solid Color Fill.
+
+## 12. The Operating System
+
+- [ ] **12.1 Kernel Core (The Microkernel)**
+  - [ ] **Context Switching**: Save/Restore R0-R31, PC, SP.
+  - [ ] **Scheduler**: Round-Robin multitasking using System Timer.
+  - [ ] **Syscalls**: Define ABI for User -> Kernel requests (e.g., `SVC` instruction).
+- [ ] **12.2 Filesystem Driver**
+  - [ ] Implement `AureliaFS` (Simple Inode-based FS).
+  - [ ] Driver for SSD (Read/Write Blocks via `StorageController`).
+- [ ] **12.3 Window Manager (GUI)**
+  - [ ] Compositor: Draw Windows to VRAM.
+  - [ ] Event Loop: Dispatch Mouse/Keyboard events to active Window.
