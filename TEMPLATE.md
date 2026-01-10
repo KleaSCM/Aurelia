@@ -151,6 +151,23 @@ I wanted to push the limits of what's possible on a single core before moving to
 - 🚀 Port compute shaders for massive particle systems
 - 🎮 Add support for Jolt Physics integration
 
+## 🎮 Interactive Demo
+
+### [Demo Title]
+
+[Brief description of what this demo shows.]
+
+```typescript
+// Interactive Demo Code
+console.log("Hello World");
+```
+
+**Output**:
+
+```text
+Hello World
+```
+
 ## 📫 Contact
 
 - **Email**: <your.email@example.com>
