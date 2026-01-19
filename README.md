@@ -28,24 +28,24 @@ graph TD
     CLK --> RAM
     
     subgraph "The Core"
-        CPU[Aurelia CPU]
-        REG[Register File (R0-R31)]
-        ALU[ALU]
-        CU[Control Unit]
+        CPU["Aurelia CPU"]
+        REG["Register File (R0-R31)"]
+        ALU["ALU"]
+        CU["Control Unit"]
         CPU <--> REG
         CPU <--> ALU
         CPU <--> CU
     end
 
     subgraph "The Nervous System"
-        BUS((System Bus))
+        BUS(("System Bus"))
         CPU <==>|Address/Data| BUS
     end
 
     subgraph "Memory & Storage"
-        RAM[DRAM Controller (256MB)]
-        SSD[NVMe Storage Controller]
-        NAND[(NAND Flash Array)]
+        RAM["DRAM Controller (256MB)"]
+        SSD["NVMe Storage Controller"]
+        NAND[("NAND Flash Array")]
         
         BUS <==> RAM
         BUS <==> SSD
@@ -53,9 +53,9 @@ graph TD
     end
     
     subgraph "Peripherals"
-        UART[UART Console]
-        PIC[Interrupt Controller]
-        TIMER[System Timer]
+        UART["UART Console"]
+        PIC["Interrupt Controller"]
+        TIMER["System Timer"]
         
         BUS <==> UART
         BUS <==> PIC
