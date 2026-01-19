@@ -1,174 +1,183 @@
-# [Project Name]
+# Aurelia Virtual Ecosystem
 
-[Short, punchy description of what the project does. This will be the main summary shown on the card.]
+A cycle-accurate 64-bit RISC ecosystem emulator that simulates the entire computing stack—from quantum tunneling physics in NAND flash to the micro-operations of a pipelined CPU.
 
-## 🚀 Key Features
+## Key Features
 
-- **Zero-Copy Architecture**: Uses shared memory for IPC to minimize overhead.
-- **Custom Memory Arena**: O(1) allocation and deallocation for critical paths.
-- **Lock-Free Queues**: High-throughput data ingestion using atomic CAS operations.
-- **Vulkan Rendering**: Low-level graphics pipeline control.
+- **Quantum Physics Simulation**: Models electron trapping/release and oxide degradation in NAND flash.
+- **Cycle-Accurate Pipeline**: Fetch-Decode-Execute FSM with precise stall/hazard logic.
+- **NVMe 1.4 Controller**: Full submission/completion queue protocol with scattered DMA (PRP).
+- **Strict Bus Protocol**: Synchronous master-slave interconnect handling split transactions.
 
 ## 🛠️ Technology Stack
 
 ### Languages
 
-- C++20
-- Assembly (x86_64)
-- GLSL/HLSL
+- C++23 (Strict)
+- Assembly (Aurelia ISA)
+- CMake / Ninja
 
 ### Frameworks & Libraries
 
-- Vulkan SDK
-- SDL2 / GLFW
-- Dear ImGui
+- Catch2 (Testing)
+- nlohmann/json (Config)
+- fmt (Formatting)
 
-### Databases & Storage
+### Architecture
 
-- SQLite (Embedded)
-- Binary Flatfiles
-- Custom VFS
+- **ISA**: Custom 64-bit RISC
+- **Storage**: NVMe + NAND Flash (Simulated)
+- **Bus**: Memory-Mapped I/O (MMIO)
 
 ### Tools & Platforms
 
-- CMake
-- GDB / Valgrind
-- RenderDoc
 - Linux (Kernel 6.x)
+- GDB / Valgrind
+- Doxygen
 
 ## 🎯 Problem Statement
 
-Standard physics engines were too heavy/slow for the specific simulation needs of [Target Application]. We needed a solution that could handle 100,000+ rigid bodies in real-time on consumer hardware without the bloat of a full game engine.
+Most emulators are functional—they just execute instructions. I wanted to build an emulator that is **physical**. I wanted to understand *why* SSDs wear out, *how* a CPU pipeline stalls, and *what* actually happens on the bus when you write to memory. Functional emulation wasn't enough; I needed cycle-accurate simulation of the underlying hardware physics.
 
 ### Challenges Faced
 
-- Cache misses causing severe performance degradation during collision broadphase.
-- Floating point determinism issues across different CPU architectures.
-- Managing GPU memory fragmentation with dynamic resource loading.
+- **NAND Physics**: simulating probabilistic electron tunneling without destroying performance.
+- **Pipeline Hazards**: Accurately modeling structural hazards when the fetch unit and load/store unit fight for the bus.
+- **NVMe Complexity**: Implementing the asynchronous doorbell mechanism and DMA scattering correctly.
 
 ### Project Goals
 
-- Achieve < 16ms frame time consistently (60 FPS minimum).
-- Implement a custom SAP (Sweep and Prune) broadphase.
-- Zero reliance on STL containers in hot loops.
+- Simulate the degradation of flash memory over time (Bit Error Rate).
+- Implement a fully synchronous bus protocol where every cycle matters.
+- Create a custom 64-bit assembly language and toolchain.
 
 ## 🏗️ Architecture
 
 ### System Overview
 
-The engine follows a Data-Oriented Design (DOD) approach, organizing entities in contiguous memory blocks (SoA - Structure of Arrays) rather than standard OOP heirarchies to maximize cache locality.
+Aurelia follows a strict **Von Neumann** architecture. The heart is the System Bus, which orchestrates all communication between the CPU, RAM, and Peripherals. Components are clock-driven, stepping their internal state machines on every tick.
 
 ### Core Components
 
-- **ECS Registry**: Manages entity IDs and component arrays.
-- **Physics Solver**: Impulse-based resolution for rigid body constraints.
-- **Render System**: Multithreaded command buffer generation.
+- **CPU**: 3-stage pipeline (IF, ID, EX) with hazard detection.
+- **NAND Array**: Storage cells with wear-leveling and error injection logic.
+- **FTL**: Firmware layer mapping Logical Block Addresses (LBA) to Physical Block Addresses (PBA).
 
 ### Design Patterns
 
-- Entity Component System (ECS)
-- Double Buffering (for state updates)
-- RAII (Resource Acquisition Is Initialization)
+- **Finite State Machines (FSM)**: Used for Bus Controller and Pipeline stages.
+- **Observer Pattern**: For interrupt handling (PIC).
+- **Command Pattern**: NVMe Submission Queue processing.
 
 ## 📊 Performance Metrics
 
 ### Key Metrics
 
-**Frame Time**: 8.2ms - Average render loop execution
-**Entity Count**: 150,000 - Stable simulation limit
-**Memory Footprint**: 250MB - Total heap usage
+**Clock Speed**: ~50 MHz (Simulated)
+**NAND Throughput**: 120 MB/s (Read), 40 MB/s (Program)
+**Boot Time**: < 200ms (to shell)
 
 ### Benchmarks
 
-- Broadphase: 2.1ms : per frame
-- Solver Interaction: 1.5ms : per frame
-- Draw Call Generation: 0.8ms : per frame
+- **Fibonacci (Recursive)**: 145 cycles for N=10
+- **Memcpy (4KB)**: 12,000 cycles (optimized burst)
+- **Prime Sieve**: 450,000 cycles (1-1000)
 
 ## 📥 Installation
 
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/KleaSCM/your-project.git
-cd your-project
+git clone https://github.com/KleaSCM/Aurelia.git
+cd Aurelia
 ```
 
 ### 2. Build with CMake
 
 ```bash
 mkdir build && cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release
-make -j$(nproc)
+cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build .
 ```
 
 ## 🚀 Usage
 
-### Run the Engine
+### Run the Emulator
 
 ```bash
-./bin/engine_executable
+./Aurelia
 ```
 
-### Run with Debug Layers
+### Run Performance Benchmarks
 
 ```bash
-ENABLE_VALIDATION_LAYERS=1 ./bin/engine_executable
+./demo_perf
 ```
 
 ## 💻 Code Snippets
 
-### SIMD Vector Math
+### NAND Tunneling Probability
 
 ```cpp
-// Fast 4-component dot product using SSE intrinsics
-inline float dot_product_sse(__m128 a, __m128 b) {
-    __m128 r = _mm_dp_ps(a, b, 0x71);
-    return _mm_cvtss_f32(r);
+// Fowler-Nordheim Tunneling Approximation
+// Returns true if an electron is trapped based on programming voltage
+bool NandCell::AttemptProgram(float Vpp) {
+    float tunnelProb = Alpha * std::exp(Beta * Vpp);
+    if (GenerateRandomFloat() < tunnelProb) {
+        state = State::Programmed; // Logic 0
+        thresholdVoltage += DeltaVth;
+        return true;
+    }
+    return false;
 }
 ```
 
-**Explanation**: Using hardware intrinsics provided a 4x speedup over the scalar implementation for batch vector operations.
+**Explanation**: This snippet models the quantum probability of an electron tunneling through the oxide layer. It's not deterministic—just like real hardware!
+
+### Bus State Machine
+
+```cpp
+void Bus::Tick() {
+    switch (currentState) {
+        case State::Idle:
+            if (control.Read || control.Write) currentState = State::AddrPhase;
+            break;
+        case State::AddrPhase:
+            if (slave.Wait) currentState = State::WaitPhase;
+            else currentState = State::DataPhase;
+            break;
+        // ...
+    }
+}
+```
+
+**Explanation**: The bus controller implements a classic Mealy machine to handle handshake timing, ensuring components respect read/write latencies.
 
 ## 💭 Commentary
 
 ### Motivation
 
-I wanted to push the limits of what's possible on a single core before moving to multithreading. It was a deep dive into how CPUs actually execute instructions.
+This started as a quest to understand SSDs. I was fascinated by how a device composed of unreliable, degrading storage cells could be made reliable through firmware (ECC/FTL). It spiraled into a full system emulator because I needed a CPU to drive the SSD controller!
 
 ### Design Decisions
 
-- **Manual Memory Management**: To avoid the unpredictable pauses of allocators during gameplay.
-- **Vulkan over OpenGL**: For explicit control over synchronization and memory barriers.
+- **C++23**: Used for `std::expected` (error handling) and `std::span` (memory views).
+- **Synchronous Bus**: Chosen over an event-driven bus to force cycle-accurate thinking.
+- **Custom ISA**: RISC-V was too complex for the specific educational goals; a custom 32-opcode ISA allowed for a cleaner pipeline implementation.
 
 ### Lessons Learned
 
-- Writing a physics engine from scratch is mathematically intense but incredibly rewarding.
-- Visual debugging tools (like drawing colliders) are non-negotiable from day one.
+- "Wait states" are the bane of performance.
+- Writing a Flash Translation Layer (FTL) is incredibly hard—garbage collection logic is subtle and prone to race conditions.
+- Validating a CPU pipeline requires rigorous regression testing (hence the Fibonacci/Prime benchmarks).
 
 ### Future Plans
 
-- 💡 Implement soft-body dynamics
-- 🚀 Port compute shaders for massive particle systems
-- 🎮 Add support for Jolt Physics integration
-
-## 🎮 Interactive Demo
-
-### [Demo Title]
-
-[Brief description of what this demo shows.]
-
-```typescript
-// Interactive Demo Code
-console.log("Hello World");
-```
-
-**Output**:
-
-```text
-Hello World
-```
+- 💡 Implement Out-of-Order execution (Tomasulo's Algorithm).
+- 🚀 Add a MMU for virtual memory support.
+- 🎮 Port a simple C compiler to the custom ISA.
 
 ## 📫 Contact
 
-- **Email**: <your.email@example.com>
+- **Email**: <KleaSCM@gmail.com>
 - **GitHub**: [github.com/KleaSCM](https://github.com/KleaSCM)
